@@ -7,7 +7,7 @@ from collections import Counter
 import numpy as np
 from scipy.interpolate import interpn
 
-from src.noice_experiments.noisy_wind_files import (
+from src.basic_evolution.noisy_wind_files import (
     files_by_stations,
     forecast_files_from_dir,
     extracted_forecast_params

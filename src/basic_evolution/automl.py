@@ -3,7 +3,7 @@ import time
 from hyperopt import fmin, tpe, space_eval
 from hyperopt import hp
 
-from src.noice_experiments.main import run_robustess_exp
+from src.basic_evolution.main import run_robustess_exp
 
 space = hp.choice('a',
                   [

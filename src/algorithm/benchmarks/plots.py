@@ -5,11 +5,11 @@ import numpy as np
 import seaborn as sns
 from mpl_toolkits.mplot3d import Axes3D
 
-from src.noice_experiments.model import (
+from src.basic_evolution.model import (
     FakeModel,
     CSVGridFile
 )
-from src.noice_experiments.model import SWANParams
+from src.basic_evolution.model import SWANParams
 
 
 def population_variance_boxplots(history):

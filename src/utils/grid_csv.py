@@ -1,11 +1,11 @@
 import csv
 from math import sqrt
 
-from src.noice_experiments.errors import (
+from src.basic_evolution.errors import (
     error_rmse_peak,
     error_rmse_all
 )
-from src.noice_experiments.model import (
+from src.basic_evolution.model import (
     CSVGridFile,
     FakeModel
 )

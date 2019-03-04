@@ -10,23 +10,23 @@ import numpy as np
 from tqdm import tqdm
 
 from src.evolution.spea2 import SPEA2
-from src.noice_experiments.errors import (
+from src.basic_evolution.errors import (
     error_rmse_all,
     error_mae_all,
     error_mae_peak,
     error_rmse_peak
 )
-from src.noice_experiments.evo_operators import (
+from src.basic_evolution.evo_operators import (
     calculate_objectives_interp,
     crossover,
     mutation,
     initial_pop_lhs
 )
-from src.noice_experiments.model import (
+from src.basic_evolution.model import (
     CSVGridFile,
     FakeModel
 )
-from src.noice_experiments.model import SWANParams
+from src.basic_evolution.model import SWANParams
 from src.utils.files import (
     wave_watch_results
 )
