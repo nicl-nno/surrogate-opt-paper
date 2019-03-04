@@ -25,7 +25,7 @@ def grid_rmse():
         [obs.time_series() for obs in wave_watch_results(path_to_results='../../samples/ww-res/', stations=stations)]
 
     fake = FakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=stations, error=error_rmse_peak,
-                     forecasts_path='../../../wind-noice-runs/results_fixed/0', noise_run=0)
+                     forecasts_path='../../../wind-noice-runs/results_fixed/0', fidelity=0)
 
     errors_total = []
     m_error = pow(10, 9)
@@ -63,7 +63,7 @@ def error_grid(noise_case=0):
 
     model_all = FakeModel(grid_file=grid, observations=ww3_obs_all, stations_to_out=stations,
                           error=error_rmse_all,
-                          forecasts_path='../../../wind-postproc/out', noise_run=noise_case)
+                          forecasts_path='../../../wind-postproc/out', fidelity=noise_case)
 
     with open(f'../../samples/params_rmse_{noise_case}.csv', mode='w', newline='') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')

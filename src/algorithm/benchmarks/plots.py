@@ -104,7 +104,7 @@ def plot_error_variance(station_index=2, stmp_index=3):
     grid = CSVGridFile('../../samples/wind-exp-params.csv')
 
     for noise in noise_dirs.keys():
-        model = FakeModel(grid_file=grid, forecasts_path=noise_dirs[noise], noise_run=noise)
+        model = FakeModel(grid_file=grid, forecasts_path=noise_dirs[noise], fidelity=noise)
         model_by_noise[noise] = model
 
     fig = plt.figure()

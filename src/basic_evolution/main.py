@@ -62,7 +62,7 @@ def model_all_stations():
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=ALL_STATIONS)]
 
     model = FakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS, error=error_rmse_all,
-                      forecasts_path='../../../wind-postproc/out', noise_run=0)
+                      forecasts_path='../../../wind-fidelity/out', fidelity=240)
 
     return model
 
@@ -80,55 +80,6 @@ def default_params_forecasts(model):
     forecasts = model.grid[drf_idx, cfw_idx, stpm_idx]
 
     return forecasts
-
-
-def optimize_by_ww3_obs(train_stations, max_gens, pop_size, archive_size, crossover_rate, mutation_rate,
-                        mutation_value_rate, iter_ind, plot_figures=True):
-    grid = CSVGridFile('../../samples/wind-exp-params-new.csv')
-
-    ww3_obs = \
-        [obs.time_series() for obs in
-         wave_watch_results(path_to_results='../../samples/ww-res/', stations=train_stations)]
-
-    error = error_rmse_all
-    train_model = FakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=train_stations, error=error,
-                            forecasts_path='../../../wind-postproc/out', noise_run=0)
-
-    history, archive_history = SPEA2(
-        params=SPEA2.Params(max_gens, pop_size=pop_size, archive_size=archive_size,
-                            crossover_rate=crossover_rate, mutation_rate=mutation_rate,
-                            mutation_value_rate=mutation_value_rate),
-        init_population=initial_pop_lhs,
-        objectives=partial(calculate_objectives_interp, train_model),
-        crossover=crossover,
-        mutation=mutation).solution(verbose=True)
-
-    params = history.last().genotype
-    save_archive_history(archive_history, f'history-{iter_ind}.csv')
-
-    if plot_figures:
-        test_model = model_all_stations()
-
-        closest_hist = test_model.closest_params(params)
-        closest_params_set_hist = SWANParams(drf=closest_hist[0], cfw=closest_hist[1], stpm=closest_hist[2])
-
-        forecasts = []
-        for row in grid.rows:
-
-            if set(row.model_params.params_list()) == set(closest_params_set_hist.params_list()):
-                drf_idx, cfw_idx, stpm_idx = test_model.params_idxs(row.model_params)
-                forecasts = test_model.grid[drf_idx, cfw_idx, stpm_idx]
-                if grid.rows.index(row) < 100:
-                    print("!!!")
-                print("index : %d" % grid.rows.index(row))
-                break
-
-        plot_results(forecasts=forecasts,
-                     observations=wave_watch_results(path_to_results='../../samples/ww-res/', stations=ALL_STATIONS),
-                     baseline=default_params_forecasts(test_model))
-        plot_population_movement(archive_history, grid)
-
-    return history
 
 
 def save_archive_history(history, file_name='history.csv'):
@@ -160,14 +111,14 @@ def save_archive_history(history, file_name='history.csv'):
                 writer.writerow(row_to_write)
 
 
-def run_robustness_exp(max_gens, pop_size, archive_size, crossover_rate, mutation_rate, mutation_value_rate, stations,
-                       **kwargs):
+def run_genetic_opt(max_gens, pop_size, archive_size, crossover_rate, mutation_rate, mutation_value_rate, stations,
+                    **kwargs):
     grid = CSVGridFile('../../samples/wind-exp-params-new.csv')
     ww3_obs = \
         [obs.time_series() for obs in wave_watch_results(path_to_results='../../samples/ww-res/', stations=stations)]
 
     train_model = FakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=stations, error=error_rmse_all,
-                            forecasts_path='../../../wind-postproc/out', noise_run=0)
+                            forecasts_path='../../../wind-fidelity/out', fidelity=30)
     test_model = model_all_stations()
 
     history, archive_history = SPEA2(
@@ -213,67 +164,17 @@ objective_manual = {'a': 0, 'archive_size_rate': 0.25, 'crossover_rate': 0.7,
                     'max_gens': 60, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
                     'mutation_p3': 0.001, 'mutation_rate': 0.7, 'pop_size': 20}
 
-# max_gens = 80, pop_size = 40, archive_size = 20, crossover_rate = 0.7, mutation_rate = 0.7,
-#                        mutation_value_rate=[0.05, 0.001, 0.0005]
 
-stations_for_run_set3 = [[1],
-                         [1, 2],
-                         [1, 2, 3],
-                         [1, 2, 3, 4],
-                         [1, 2, 3, 4, 5],
-                         [1, 2, 3, 4, 5, 6],
-                         [4],
-                         [4, 5],
-                         [4, 5, 6],
-                         [4, 5, 6, 7],
-                         [4, 5, 6, 7, 8],
-                         [4, 5, 6, 7, 8, 9],
-                         [1],
-                         [1, 2],
-                         [1, 2, 3],
-                         [1, 2, 3, 7],
-                         [1, 2, 3, 7, 8],
-                         [1, 2, 3, 7, 8, 9]]
-
-stations_for_run_set2 = [[1],
-                         [1, 2],
-                         [5],
-                         [5, 6],
-                         [5, 6, 7],
-                         [1, 2, 3],
-                         [1, 2, 3, 8],
-                         [4, 5, 6, 7],
-                         [9],
-                         [8, 9],
-                         [2]]
-
-stations_for_run_set = [[1],
-                        [2],
-                        [3],
-                        [4],
-                        [5],
-                        [6],
-                        [7],
-                        [8],
-                        [9],
-                        [1, 4],
-                        [2, 5],
-                        [4, 8],
-                        [5, 9],
-                        [1, 2, 3],
-                        [1, 4, 9],
-                        [1, 2, 4, 7, 9],
-                        [1, 2, 3, 7, 8, 9],
-                        [1, 2, 3, 4, 5, 6]]
+stations_for_run_set = [[1, 2, 3, 4, 5, 6]]
 
 
-def robustness_statistics():
+def experiment_run():
     param_for_run = objective_manual
 
     exptime = str(datetime.datetime.now().time()).replace(":", "-")
     os.mkdir(f'../../{exptime}')
 
-    iterations = 100
+    iterations = 1
     run_by = 'rmse_all'
 
     file_name = f'../bl-{run_by}-{iterations}-runs.csv'
@@ -301,7 +202,7 @@ def robustness_statistics():
                 all_packed_params.append([st_set_id, station, params, fig_path])
 
             with tqdm(total=runs_total) as progress_bar:
-                for _, out in tqdm(enumerate(p.imap(robustness_run, all_packed_params))):
+                for _, out in tqdm(enumerate(p.imap(opt_run, all_packed_params))):
                     results.append(out)
                     progress_bar.update()
 
@@ -327,21 +228,21 @@ def robustness_statistics():
                 writer.writerow(row_to_write)
 
 
-def robustness_run(packed_args):
+def opt_run(packed_args):
     st_set_id, stations_for_run, param_for_run, figure_path = packed_args
     print(stations_for_run)
     archive_size = round(param_for_run['archive_size_rate'] * param_for_run['pop_size'])
     mutation_value_rate = [param_for_run['mutation_p1'], param_for_run['mutation_p2'],
                            param_for_run['mutation_p3']]
-    best = run_robustness_exp(max_gens=param_for_run['max_gens'],
-                              pop_size=param_for_run['pop_size'],
-                              archive_size=archive_size,
-                              crossover_rate=param_for_run['crossover_rate'],
-                              mutation_rate=param_for_run['mutation_rate'],
-                              mutation_value_rate=mutation_value_rate,
-                              stations=stations_for_run,
-                              save_figures=False,
-                              figure_path=figure_path)
+    best = run_genetic_opt(max_gens=param_for_run['max_gens'],
+                           pop_size=param_for_run['pop_size'],
+                           archive_size=archive_size,
+                           crossover_rate=param_for_run['crossover_rate'],
+                           mutation_rate=param_for_run['mutation_rate'],
+                           mutation_value_rate=mutation_value_rate,
+                           stations=stations_for_run,
+                           save_figures=False,
+                           figure_path=figure_path)
 
     return st_set_id, best
 
@@ -361,7 +262,7 @@ def init_models_to_tests():
     for metric_name in metrics.keys():
         model = FakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS,
                           error=metrics[metric_name],
-                          forecasts_path='../../../wind-postproc/out', noise_run=0)
+                          forecasts_path='../../../wind-fidelity/out', fidelity=30)
         models[metric_name] = model
 
     return models
@@ -386,8 +287,8 @@ def all_error_metrics(params, models_to_tests):
 def prepare_all_fake_models():
     errors = [error_rmse_all]
     grid = CSVGridFile('../../samples/wind-exp-params-new.csv')
-    noises = [0, 1, 2, 15, 16, 17, 25, 26]
-    for noise in noises:
+    fids = [30,120,240]
+    for fid in fids:
         for err in errors:
             for stations in stations_for_run_set:
                 print(f'configure model for: noise = {noise}; error = {err}; stations = {stations}')
@@ -396,14 +297,65 @@ def prepare_all_fake_models():
                      wave_watch_results(path_to_results='../../samples/ww-res/', stations=stations)]
                 _ = FakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=stations,
                               error=err,
-                              forecasts_path=f'../../../wind-postproc/out',
-                              noise_run=noise)
+                              forecasts_path=f'../../../wind-fidelity/out',
+                              fidelity=fid)
 
 
 def reference_metrics():
     return all_error_metrics(params=SWANParams(drf=1.0, cfw=0.015, stpm=0.00302),
                              models_to_tests=init_models_to_tests())
 
+def optimize_by_ww3_obs(train_stations, max_gens, pop_size, archive_size, crossover_rate, mutation_rate,
+                        mutation_value_rate, iter_ind, plot_figures=True):
+    grid = CSVGridFile('../../samples/wind-exp-params-new.csv')
+
+    ww3_obs = \
+        [obs.time_series() for obs in
+         wave_watch_results(path_to_results='../../samples/ww-res/', stations=train_stations)]
+
+    error = error_rmse_all
+    train_model = FakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=train_stations, error=error,
+                            forecasts_path='../../../wind-fidelity/out', fidelity=240)
+
+    history, archive_history = SPEA2(
+        params=SPEA2.Params(max_gens, pop_size=pop_size, archive_size=archive_size,
+                            crossover_rate=crossover_rate, mutation_rate=mutation_rate,
+                            mutation_value_rate=mutation_value_rate),
+        init_population=initial_pop_lhs,
+        objectives=partial(calculate_objectives_interp, train_model),
+        crossover=crossover,
+        mutation=mutation).solution(verbose=True)
+
+    params = history.last().genotype
+    save_archive_history(archive_history, f'history-{iter_ind}.csv')
+
+    if plot_figures:
+        test_model = model_all_stations()
+
+        closest_hist = test_model.closest_params(params)
+        closest_params_set_hist = SWANParams(drf=closest_hist[0], cfw=closest_hist[1], stpm=closest_hist[2])
+
+        forecasts = []
+        for row in grid.rows:
+
+            if set(row.model_params.params_list()) == set(closest_params_set_hist.params_list()):
+                drf_idx, cfw_idx, stpm_idx = test_model.params_idxs(row.model_params)
+                forecasts = test_model.grid[drf_idx, cfw_idx, stpm_idx]
+                if grid.rows.index(row) < 100:
+                    print("!!!")
+                print("index : %d" % grid.rows.index(row))
+                break
+
+        plot_results(forecasts=forecasts,
+                     observations=wave_watch_results(path_to_results='../../samples/ww-res/', stations=ALL_STATIONS),
+                     baseline=default_params_forecasts(test_model))
+        plot_population_movement(archive_history, grid)
+
+    return history
+
 
 if __name__ == '__main__':
-    robustness_statistics()
+    #experiment_run()
+
+    optimize_by_ww3_obs([1], max_gens=20, pop_size=20, archive_size=10, crossover_rate=0.7, mutation_rate=0.7,
+                            mutation_value_rate=[0.05, 0.001, 0.0005], iter_ind=0, plot_figures=True)

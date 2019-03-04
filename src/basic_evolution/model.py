@@ -46,12 +46,12 @@ class SWANParams:
 
 
 class FakeModel:
-    def __init__(self, grid_file, error, observations, stations_to_out, forecasts_path, noise_run):
+    def __init__(self, grid_file, error, observations, stations_to_out, forecasts_path, fidelity):
         '''
         :param grid_file: Path to grid file
         :param error: Error metrics to evaluate (forecasts - observations)
         :param forecasts_path: Path to directory with forecast files
-        :param noise_run: Index of noise case (corresponds to name of forecasts directory)
+        :param fidelity: Index of fidelity case (corresponds to name of forecasts directory)
         '''
 
         self.grid_file = grid_file
@@ -59,13 +59,14 @@ class FakeModel:
         self.observations = observations
         self.stations = stations_to_out
         self.forecasts_path = forecasts_path
-        self.noise_run = noise_run
+        self.fidelity = fidelity
+        self.noise_run = 0
         self._init_grids()
 
     def _init_grids(self):
         self.grid = self._empty_grid()
 
-        files = forecast_files_from_dir(self.forecasts_path)
+        files = forecast_files_from_dir(self.forecasts_path+f'_{self.fidelity}')
 
         stations = files_by_stations(files, noise_run=self.noise_run, stations=[str(st) for st in self.stations])
 
@@ -99,7 +100,7 @@ class FakeModel:
         # calc fitness for every point
 
         st_set_id = ("-".join(str(self.stations)))
-        file_path = f'grid-saved-{self.error.__name__}_{self.noise_run}_st{st_set_id}.pik'
+        file_path = f'grid-saved-{self.error.__name__}_{self.fidelity}_st{st_set_id}.pik'
 
         grid_file_path = os.path.join(GRID_PATH, file_path)
 
