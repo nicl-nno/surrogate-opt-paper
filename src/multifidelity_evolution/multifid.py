@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 from src.basic_evolution.model import (
-    FakeModel
+    FidelityFakeModel
 )
 
 
@@ -24,14 +24,13 @@ class Multifid:
         self.stations_to_out = stations_to_out
         self.error = error
         self.models = self._initialized_models(fids=fids)
-        
 
     def _initialized_models(self, fids):
         models = []
         for fid in fids:
-            models.append(FakeModel(grid_file=self.grid, observations=self.observations,
-                                    stations_to_out=self.stations_to_out, error=self.error,
-                                    forecasts_path=os.path.join(self.forecasts_dir), fidelity=fid))
+            models.append(FidelityFakeModel(grid_file=self.grid, observations=self.observations,
+                                            stations_to_out=self.stations_to_out, error=self.error,
+                                            forecasts_path=os.path.join(self.forecasts_dir), fidelity=fid))
 
         return models
 

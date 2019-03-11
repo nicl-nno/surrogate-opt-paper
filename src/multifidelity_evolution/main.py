@@ -9,8 +9,6 @@ from multiprocessing import Pool
 import numpy as np
 from tqdm import tqdm
 
-from src.multifidelity_evolution.multifid import Multifid
-from src.evolution.spea2 import SPEA2
 from src.basic_evolution.errors import (
     error_rmse_all,
     error_mae_all,
@@ -26,8 +24,10 @@ from src.basic_evolution.evo_operators import (
 from src.basic_evolution.model import (
     CSVGridFile,
     SWANParams,
-    FakeModel
+    FidelityFakeModel
 )
+from src.evolution.spea2 import SPEA2
+from src.multifidelity_evolution.multifid import Multifid
 from src.utils.files import (
     wave_watch_results)
 from src.utils.vis import (
@@ -46,11 +46,10 @@ def model_all_stations():
         [obs.time_series() for obs in
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=ALL_STATIONS)]
 
-    model = FakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS, error=error_rmse_all,
-                      forecasts_path='../../../wind-fidelity/out', fidelity=30)
+    model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS, error=error_rmse_all,
+                              forecasts_path='../../../wind-fidelity/out', fidelity=30)
 
     return model
-
 
 
 def default_params_forecasts(model):
@@ -92,7 +91,7 @@ def optimize(train_stations, max_gens, pop_size, archive_size, crossover_rate, m
         [obs.time_series() for obs in
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=train_stations)]
 
-    ens = Multifid(grid=grid, fids=[30,120,240], observations=ww3_obs,
+    ens = Multifid(grid=grid, fids=[30, 120, 240], observations=ww3_obs,
                    path_to_forecasts='../../../wind-fidelity/out',
                    stations_to_out=train_stations, error=error_rmse_all)
 
@@ -150,7 +149,7 @@ def save_archive_history(history, file_name='ens-history.csv'):
                 row_to_write['gen_idx'] = gen_idx
 
                 metrics = test_model.output(params=ind.genotype)
-                for err_idx in range(0,len(metrics)):
+                for err_idx in range(0, len(metrics)):
                     row_to_write[f'err_{err_idx + 1}'] = metrics[err_idx]
 
                 row_to_write['drf'] = ind.genotype.drf
@@ -174,7 +173,7 @@ def run_robustess_exp_ens(max_gens, pop_size, archive_size, crossover_rate, muta
                                                                stations=ALL_STATIONS))
 
     old_path = '../../../wind-fidelity/out'
-    train_model = Multifid(grid=grid, noise_cases=[30,120,240],
+    train_model = Multifid(grid=grid, noise_cases=[30, 120, 240],
                            observations=ww3_obs,
                            path_to_forecasts=old_path,
                            stations_to_out=stations, error=error_rmse_all)
@@ -189,7 +188,7 @@ def run_robustess_exp_ens(max_gens, pop_size, archive_size, crossover_rate, muta
         mutation=mutation).solution(verbose=False)
 
     exptime2 = str(datetime.datetime.now().time()).replace(":", "-")
-    #save_archive_history(archive_history, f'rob-exp-ens-{exptime2}.csv')
+    # save_archive_history(archive_history, f'rob-exp-ens-{exptime2}.csv')
 
     params = history.last().genotype
 
@@ -222,8 +221,7 @@ objective_manual = {'a': 0, 'archive_size_rate': 0.25, 'crossover_rate': 0.7,
                     'max_gens': 60, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
                     'mutation_p3': 0.001, 'mutation_rate': 0.7, 'pop_size': 20}
 
-
-stations_for_run_set = [[1, 2, 3,4,5,6]]
+stations_for_run_set = [[1, 2, 3, 4, 5, 6]]
 
 
 def robustness_statistics():
@@ -255,8 +253,9 @@ def robustness_statistics():
             fig_paths = [os.path.join('../..', exptime, str(iteration * runs_total + run)) for run in range(runs_total)]
             all_packed_params = []
 
-            runs_range=list(range(0,len(stations_for_run_set)))
-            for st_set_id, station, params, fig_path in zip(runs_range, stations_for_run_set, repeat(param_for_run), fig_paths):
+            runs_range = list(range(0, len(stations_for_run_set)))
+            for st_set_id, station, params, fig_path in zip(runs_range, stations_for_run_set, repeat(param_for_run),
+                                                            fig_paths):
                 all_packed_params.append([st_set_id, station, params, fig_path])
 
             with tqdm(total=runs_total) as progress_bar:
@@ -292,14 +291,14 @@ def robustness_run(packed_args):
     mutation_value_rate = [param_for_run['mutation_p1'], param_for_run['mutation_p2'],
                            param_for_run['mutation_p3']]
     best = run_robustess_exp_ens(max_gens=param_for_run['max_gens'],
-                                                       pop_size=param_for_run['pop_size'],
-                                                       archive_size=archive_size,
-                                                       crossover_rate=param_for_run['crossover_rate'],
-                                                       mutation_rate=param_for_run['mutation_rate'],
-                                                       mutation_value_rate=mutation_value_rate,
-                                                       stations=stations_for_run,
-                                                       save_figures=True,
-                                                       figure_path=figure_path)
+                                 pop_size=param_for_run['pop_size'],
+                                 archive_size=archive_size,
+                                 crossover_rate=param_for_run['crossover_rate'],
+                                 mutation_rate=param_for_run['mutation_rate'],
+                                 mutation_value_rate=mutation_value_rate,
+                                 stations=stations_for_run,
+                                 save_figures=True,
+                                 figure_path=figure_path)
 
     return st_set_id, best
 
@@ -316,9 +315,9 @@ def init_models_to_tests():
 
     models = {}
     for metric_name in metrics.keys():
-        model = FakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS,
-                          error=metrics[metric_name],
-                          forecasts_path='../../../wind-fidelity/out', noise_run=30)
+        model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS,
+                                  error=metrics[metric_name],
+                                  forecasts_path='../../../wind-fidelity/out', noise_run=30)
         models[metric_name] = model
 
     return models
@@ -344,7 +343,7 @@ def all_error_metrics(params, models_to_tests):
 
 
 if __name__ == '__main__':
-    #robustness_statistics()
-    #for iter_ind in range(0, 30):
-       optimize([30], max_gens=10, pop_size=10, archive_size=5, crossover_rate=0.7, mutation_rate=0.7,
-                 mutation_value_rate=[0.05, 0.001, 0.0005], iter_ind=0, plot_figures=True)
+    # robustness_statistics()
+    # for iter_ind in range(0, 30):
+    optimize([30], max_gens=10, pop_size=10, archive_size=5, crossover_rate=0.7, mutation_rate=0.7,
+             mutation_value_rate=[0.05, 0.001, 0.0005], iter_ind=0, plot_figures=True)

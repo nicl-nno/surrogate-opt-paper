@@ -31,6 +31,7 @@ class SWANParams:
     def new_instance():
         return SWANParams(drf=random.choice(drf_range), cfw=random.choice(cfw_range), stpm=random.choice(stpm_range))
 
+    # TODO: add new parameter: fidelity
     def __init__(self, drf, cfw, stpm):
         self.drf = drf
         self.cfw = cfw
@@ -45,14 +46,27 @@ class SWANParams:
         return [self.drf, self.cfw, self.stpm]
 
 
-class FakeModel:
-    def __init__(self, grid_file, error, observations, stations_to_out, forecasts_path, fidelity):
+class AbstractFakeModel:
+    def __init__(self, **kwargs):
+        pass
+
+    def output(self, params):
+        raise NotImplementedError()
+
+
+class FidelityFakeModel(AbstractFakeModel):
+    def __init__(self, grid_file, error, observations, stations_to_out, forecasts_path, fidelity, noise_run=0):
         '''
         :param grid_file: Path to grid file
         :param error: Error metrics to evaluate (forecasts - observations)
+        :param observations: List of time series that correspond to observations
+        :param stations_to_out: Stations of interest
         :param forecasts_path: Path to directory with forecast files
         :param fidelity: Index of fidelity case (corresponds to name of forecasts directory)
+        :param noise_run: Value of the noise applied to input forcing , by default = 0 (see forecast files naming)
         '''
+
+        super().__init__()
 
         self.grid_file = grid_file
         self.error = error
@@ -60,14 +74,15 @@ class FakeModel:
         self.stations = stations_to_out
         self.forecasts_path = forecasts_path
         self.fidelity = fidelity
-        self.noise_run = 0
+        self.noise_run = noise_run
         self._init_grids()
 
     def _init_grids(self):
         self.grid = self._empty_grid()
 
-        files = forecast_files_from_dir(self.forecasts_path+f'_{self.fidelity}')
+        files = forecast_files_from_dir(self.forecasts_path + f'_{self.fidelity}')
 
+        # TODO: obtain all files according to fidelity
         stations = files_by_stations(files, noise_run=self.noise_run, stations=[str(st) for st in self.stations])
 
         files_by_run_idx = dict()
@@ -85,14 +100,14 @@ class FakeModel:
 
             forecasts = []
             for idx, file_name in enumerate(forecasts_files):
-                forecasts.append(FakeModel.Forecast(self.stations[idx], ForecastFile(path=file_name)))
+                forecasts.append(FidelityFakeModel.Forecast(self.stations[idx], ForecastFile(path=file_name)))
 
+            # TODO: new indexing
             drf_idx, cfw_idx, stpm_idx = self.params_idxs(row.model_params)
             self.grid[drf_idx, cfw_idx, stpm_idx] = forecasts
 
-        # fintess grid for iterpolation
-
         # empty array
+        # TODO: improve initialization + new dimension
         self.err_grid = np.asarray([[[[s for s in np.arange(len(stations))] for k in np.arange(self.grid.shape[2])] for
                                      j in np.arange(self.grid.shape[1])] for i in np.arange(self.grid.shape[0])],
                                    dtype=np.float32)
@@ -138,12 +153,14 @@ class FakeModel:
         return errors
 
     def _empty_grid(self):
+        # TODO: add new dimension
         return np.empty((len(self.grid_file.drf_grid),
                          len(self.grid_file.cfw_grid),
                          len(self.grid_file.stpm_grid)),
                         dtype=list)
 
     def params_idxs(self, params):
+        # TODO: add new dimension
         drf_idx = self.grid_file.drf_grid.index(params.drf)
         cfw_idx = self.grid_file.cfw_grid.index(params.cfw)
         stpm_idx = self.grid_file.stpm_grid.index(params.stpm)
@@ -151,6 +168,7 @@ class FakeModel:
         return drf_idx, cfw_idx, stpm_idx
 
     def closest_params(self, params):
+        # TODO: add new dimension
         drf = min(self.grid_file.drf_grid, key=lambda val: abs(val - params.drf))
         cfw = min(self.grid_file.cfw_grid, key=lambda val: abs(val - params.cfw))
         stpm = min(self.grid_file.stpm_grid, key=lambda val: abs(val - params.stpm))
@@ -158,6 +176,7 @@ class FakeModel:
         return drf, cfw, stpm
 
     def output(self, params):
+        # TODO: improve interpolation with new dimension
 
         points = (
             np.asarray(self.grid_file.drf_grid), np.asarray(self.grid_file.cfw_grid),
@@ -177,6 +196,7 @@ class FakeModel:
         return out
 
     def _fixed_params(self, params):
+        # TODO: add new dimension
         params_fixed = SWANParams(drf=min(max(params.drf, min(self.grid_file.drf_grid)), max(self.grid_file.drf_grid)),
                                   cfw=min(max(params.cfw, min(self.grid_file.cfw_grid)), max(self.grid_file.cfw_grid)),
                                   stpm=min(max(params.stpm, min(self.grid_file.stpm_grid)),
