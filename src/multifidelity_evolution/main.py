@@ -52,6 +52,7 @@ def model_all_stations():
     return model
 
 
+
 def default_params_forecasts(model):
     '''
     Our baseline:  forecasts with default SWAN params

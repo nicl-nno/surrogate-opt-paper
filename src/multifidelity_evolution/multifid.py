@@ -24,6 +24,7 @@ class Multifid:
         self.stations_to_out = stations_to_out
         self.error = error
         self.models = self._initialized_models(fids=fids)
+        
 
     def _initialized_models(self, fids):
         models = []
