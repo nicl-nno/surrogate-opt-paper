@@ -93,7 +93,7 @@ def optimize(train_stations, max_gens, pop_size, archive_size, crossover_rate, m
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=train_stations)]
 
     ens = Multifid(grid=grid, fids=[30,120,240], observations=ww3_obs,
-                   path_to_forecasts='../../../wind-postproc/out',
+                   path_to_forecasts='../../../wind-fidelity/out',
                    stations_to_out=train_stations, error=error_rmse_all)
 
     history, archive_history = SPEA2(
@@ -173,7 +173,7 @@ def run_robustess_exp_ens(max_gens, pop_size, archive_size, crossover_rate, muta
                                             wave_watch_results(path_to_results='../../samples/ww-res/',
                                                                stations=ALL_STATIONS))
 
-    old_path = '../../../wind-postproc/out'
+    old_path = '../../../wind-fidelity/out'
     train_model = Multifid(grid=grid, noise_cases=[30,120,240],
                            observations=ww3_obs,
                            path_to_forecasts=old_path,
@@ -318,7 +318,7 @@ def init_models_to_tests():
     for metric_name in metrics.keys():
         model = FakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS,
                           error=metrics[metric_name],
-                          forecasts_path='../../../wind-postproc/out', noise_run=30)
+                          forecasts_path='../../../wind-fidelity/out', noise_run=30)
         models[metric_name] = model
 
     return models
