@@ -168,16 +168,15 @@ objective_manual = {'a': 0, 'archive_size_rate': 0.25, 'crossover_rate': 0.7,
 stations_for_run_set = [[1, 2, 3, 4, 5, 6]]
 
 
-def experiment_run():
-    param_for_run = objective_manual
+def experiment_run(param_for_run,add_id):
 
     exptime = str(datetime.datetime.now().time()).replace(":", "-")
     os.mkdir(f'../../{exptime}')
 
-    iterations = 1
+    iterations = 10
     run_by = 'rmse_all'
 
-    file_name = f'../bl-{run_by}-{iterations}-runs.csv'
+    file_name = f'../bl-{run_by}-add2_{add_id}-runs.csv'
     with open(file_name, 'w', newline='') as csvfile:
         fieldnames = ['ID', 'IterId', 'SetId', 'drf', 'cfw', 'stpm',
                       'rmse_all', 'rmse_peak', 'mae_all', 'mae_peak']
@@ -315,7 +314,7 @@ def optimize_by_ww3_obs(train_stations, max_gens, pop_size, archive_size, crosso
 
     error = error_rmse_all
     train_model = FakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=train_stations, error=error,
-                            forecasts_path='../../../wind-fidelity/out', fidelity=240)
+                            forecasts_path='../../../wind-fidelity/out', fidelity=30)
 
     history, archive_history = SPEA2(
         params=SPEA2.Params(max_gens, pop_size=pop_size, archive_size=archive_size,
@@ -357,5 +356,20 @@ def optimize_by_ww3_obs(train_stations, max_gens, pop_size, archive_size, crosso
 if __name__ == '__main__':
     #experiment_run()
 
-    optimize_by_ww3_obs([1], max_gens=20, pop_size=20, archive_size=10, crossover_rate=0.7, mutation_rate=0.7,
-                            mutation_value_rate=[0.05, 0.001, 0.0005], iter_ind=0, plot_figures=True)
+   # optimize_by_ww3_obs([1], max_gens=20, pop_size=20, archive_size=10, crossover_rate=0.7, mutation_rate=0.7,
+    #                        mutation_value_rate=[0.05, 0.001, 0.0005], iter_ind=0, plot_figures=True)
+
+    ind=0
+    for max_gen in range(4,15,1):
+        for pop_size in range(4, 15, 1):
+            #optimize_by_ww3_obs([1,2,3,4,5,6,7,8,9], max_gens=max_gen, pop_size=pop_size, archive_size=round(pop_size/3), crossover_rate=0.7, mutation_rate=0.7,
+            #                    mutation_value_rate=[0.05, 0.001, 0.0005], iter_ind=0, plot_figures=False)
+
+            objective_manual = {'a': 0, 'archive_size_rate': 0.25, 'crossover_rate': 0.7,
+                                'max_gens': max_gen, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
+                                'mutation_p3': 0.001, 'mutation_rate': 0.7, 'pop_size': pop_size}
+
+
+
+            experiment_run(objective_manual, ind)
+            ind=ind+1

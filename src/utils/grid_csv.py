@@ -53,7 +53,7 @@ def rmse(vars):
     return sqrt(sum([pow(v, 2) for v in vars]) / len(vars))
 
 
-def error_grid(noise_case=0):
+def error_grid(fidelity=0):
     grid = CSVGridFile('../../samples/wind-exp-params-new.csv')
     stations = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -63,9 +63,9 @@ def error_grid(noise_case=0):
 
     model_all = FakeModel(grid_file=grid, observations=ww3_obs_all, stations_to_out=stations,
                           error=error_rmse_all,
-                          forecasts_path='../../../wind-postproc/out', fidelity=noise_case)
+                          forecasts_path='../../../wind-fidelity/out', fidelity=fidelity)
 
-    with open(f'../../samples/params_rmse_{noise_case}.csv', mode='w', newline='') as csv_file:
+    with open(f'../../samples/params_rmse_{fidelity}.csv', mode='w', newline='') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
 
         header = ['DRF', 'CFW', 'STPM']
@@ -81,7 +81,7 @@ def error_grid(noise_case=0):
 
 
 def all_error_grids():
-    for noise_case in [0, 1, 2, 3, 4, 5, 6, 7, 15, 16, 17, 18, 25, 26]:
+    for noise_case in [60]:
         error_grid(noise_case)
 
 
