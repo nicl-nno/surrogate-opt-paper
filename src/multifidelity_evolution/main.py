@@ -47,7 +47,7 @@ def model_all_stations():
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=ALL_STATIONS)]
 
     model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS, error=error_rmse_all,
-                              forecasts_path='../../../wind-fidelity/out', fidelity=30)
+                              forecasts_path='../../../wind-fidelity/*', fidelity=30)
 
     return model
 
@@ -61,8 +61,8 @@ def default_params_forecasts(model):
                                                             cfw=0.015,
                                                             stpm=0.00302))
     default_params = SWANParams(drf=closest_params[0], cfw=closest_params[1], stpm=closest_params[2])
-    drf_idx, cfw_idx, stpm_idx = model.params_idxs(default_params)
-    forecasts = model.grid[drf_idx, cfw_idx, stpm_idx]
+    drf_idx, cfw_idx, stpm_idx, fid_idx = model.params_idxs(default_params)
+    forecasts = model.grid[drf_idx, cfw_idx, stpm_idx, fid_idx]
 
     return forecasts
 
@@ -92,7 +92,7 @@ def optimize(train_stations, max_gens, pop_size, archive_size, crossover_rate, m
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=train_stations)]
 
     ens = Multifid(grid=grid, fids=[30, 120, 240], observations=ww3_obs,
-                   path_to_forecasts='../../../wind-fidelity/out',
+                   path_to_forecasts='../../../wind-fidelity/*',
                    stations_to_out=train_stations, error=error_rmse_all)
 
     history, archive_history = SPEA2(
@@ -117,8 +117,8 @@ def optimize(train_stations, max_gens, pop_size, archive_size, crossover_rate, m
         forecasts = []
         for row in grid.rows:
             if set(row.model_params.params_list()) == set(closest_params_set_hist.params_list()):
-                drf_idx, cfw_idx, stpm_idx = test_model.params_idxs(row.model_params)
-                forecasts = test_model.grid[drf_idx, cfw_idx, stpm_idx]
+                drf_idx, cfw_idx, stpm_idx, fid_idx = test_model.params_idxs(row.model_params)
+                forecasts = test_model.grid[drf_idx, cfw_idx, stpm_idx, fid_idx]
                 break
 
         plot_results(forecasts=forecasts,
@@ -345,5 +345,5 @@ def all_error_metrics(params, models_to_tests):
 if __name__ == '__main__':
     # robustness_statistics()
     # for iter_ind in range(0, 30):
-    optimize([30], max_gens=10, pop_size=10, archive_size=5, crossover_rate=0.7, mutation_rate=0.7,
+    optimize([1, 2, 3], max_gens=10, pop_size=10, archive_size=5, crossover_rate=0.7, mutation_rate=0.7,
              mutation_value_rate=[0.05, 0.001, 0.0005], iter_ind=0, plot_figures=True)

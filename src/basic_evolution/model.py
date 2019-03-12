@@ -13,7 +13,9 @@ from src.basic_evolution.noisy_wind_files import (
     extracted_forecast_params
 )
 from src.utils.files import (
-    ForecastFile
+    ForecastFile,
+    extracted_fidelity,
+    presented_fidelity
 )
 
 drf_range = [0.2, 0.4, 0.6000000000000001, 0.8, 1.0, 1.2, 1.4, 1.5999999999999999, 1.7999999999999998,
@@ -31,19 +33,20 @@ class SWANParams:
     def new_instance():
         return SWANParams(drf=random.choice(drf_range), cfw=random.choice(cfw_range), stpm=random.choice(stpm_range))
 
-    # TODO: add new parameter: fidelity
-    def __init__(self, drf, cfw, stpm):
+    def __init__(self, drf, cfw, stpm, fidelity=240):
         self.drf = drf
         self.cfw = cfw
         self.stpm = stpm
+        self.fidelity = fidelity
 
-    def update(self, drf, cfw, stpm):
+    def update(self, drf, cfw, stpm, fidelity):
         self.drf = drf
         self.cfw = cfw
         self.stpm = stpm
+        self.fidelity = fidelity
 
     def params_list(self):
-        return [self.drf, self.cfw, self.stpm]
+        return [self.drf, self.cfw, self.stpm, self.fidelity]
 
 
 class AbstractFakeModel:
@@ -75,14 +78,15 @@ class FidelityFakeModel(AbstractFakeModel):
         self.forecasts_path = forecasts_path
         self.fidelity = fidelity
         self.noise_run = noise_run
+
+        self._fid_grid = sorted(presented_fidelity(forecast_files_from_dir(self.forecasts_path)))
         self._init_grids()
 
     def _init_grids(self):
         self.grid = self._empty_grid()
 
-        files = forecast_files_from_dir(self.forecasts_path + f'_{self.fidelity}')
+        files = forecast_files_from_dir(self.forecasts_path)
 
-        # TODO: obtain all files according to fidelity
         stations = files_by_stations(files, noise_run=self.noise_run, stations=[str(st) for st in self.stations])
 
         files_by_run_idx = dict()
@@ -98,35 +102,37 @@ class FidelityFakeModel(AbstractFakeModel):
             run_idx = row.id
             forecasts_files = sorted([key for key in files_by_run_idx.keys() if files_by_run_idx[key] == run_idx])
 
-            forecasts = []
-            for idx, file_name in enumerate(forecasts_files):
-                forecasts.append(FidelityFakeModel.Forecast(self.stations[idx], ForecastFile(path=file_name)))
+            files_by_fidelity = self._files_by_fidelity(forecasts_files)
 
-            # TODO: new indexing
-            drf_idx, cfw_idx, stpm_idx = self.params_idxs(row.model_params)
-            self.grid[drf_idx, cfw_idx, stpm_idx] = forecasts
+            for fidelity in files_by_fidelity:
+                files = files_by_fidelity[fidelity]
+                forecasts = []
+                for idx, file_name in enumerate(files):
+                    forecasts.append(FidelityFakeModel.Forecast(self.stations[idx], ForecastFile(path=file_name)))
+
+                drf_idx, cfw_idx, stpm_idx, fid_idx = self.params_idxs(params=SWANParams(drf=row.model_params.drf,
+                                                                                         cfw=row.model_params.cfw,
+                                                                                         stpm=row.model_params.stpm,
+                                                                                         fidelity=fidelity))
+                self.grid[drf_idx, cfw_idx, stpm_idx, fid_idx] = forecasts
 
         # empty array
-        # TODO: improve initialization + new dimension
-        self.err_grid = np.asarray([[[[s for s in np.arange(len(stations))] for k in np.arange(self.grid.shape[2])] for
-                                     j in np.arange(self.grid.shape[1])] for i in np.arange(self.grid.shape[0])],
-                                   dtype=np.float32)
+        self.err_grid = np.zeros(shape=self.grid.shape + (len(stations),))
 
         # calc fitness for every point
-
         st_set_id = ("-".join(str(self.stations)))
-        file_path = f'grid-saved-{self.error.__name__}_{self.fidelity}_st{st_set_id}.pik'
+        file_path = f'grid-saved-{self.error.__name__}_{self.noise_run}_st{st_set_id}.pik'
 
         grid_file_path = os.path.join(GRID_PATH, file_path)
 
         if not os.path.isfile(grid_file_path):
             grid_idxs = self.__grid_idxs()
 
-            for i, j, k in grid_idxs:
-                forecasts = [forecast for forecast in self.grid[i, j, k]]
+            for i, j, k, m in grid_idxs:
+                forecasts = [forecast for forecast in self.grid[i, j, k, m]]
                 for forecast, observation in zip(forecasts, self.observations):
                     station_idx = forecasts.index(forecast)
-                    self.err_grid[i, j, k, station_idx] = self.error(forecast, observation)
+                    self.err_grid[i, j, k, m, station_idx] = self.error(forecast, observation)
 
             pickle_out = open(grid_file_path, 'wb')
             pickle.dump(self.err_grid, pickle_out)
@@ -141,7 +147,8 @@ class FidelityFakeModel(AbstractFakeModel):
         for i in range(self.grid.shape[0]):
             for j in range(self.grid.shape[1]):
                 for k in range(self.grid.shape[2]):
-                    idxs.append([i, j, k])
+                    for m in range(self.grid.shape[3]):
+                        idxs.append([i, j, k, m])
         return idxs
 
     def _errors_at_point(self, packed_values):
@@ -153,60 +160,74 @@ class FidelityFakeModel(AbstractFakeModel):
         return errors
 
     def _empty_grid(self):
-        # TODO: add new dimension
+
         return np.empty((len(self.grid_file.drf_grid),
                          len(self.grid_file.cfw_grid),
-                         len(self.grid_file.stpm_grid)),
+                         len(self.grid_file.stpm_grid),
+                         len(self._fid_grid)),
                         dtype=list)
 
+    def _files_by_fidelity(self, files):
+        groups = dict()
+        for file in files:
+            fidelity = extracted_fidelity(file)
+
+            if fidelity not in groups:
+                groups[fidelity] = [file]
+            else:
+                groups[fidelity].append(file)
+
+        return groups
+
     def params_idxs(self, params):
-        # TODO: add new dimension
         drf_idx = self.grid_file.drf_grid.index(params.drf)
         cfw_idx = self.grid_file.cfw_grid.index(params.cfw)
         stpm_idx = self.grid_file.stpm_grid.index(params.stpm)
+        fid_idx = self._fid_grid.index(params.fidelity)
 
-        return drf_idx, cfw_idx, stpm_idx
+        return drf_idx, cfw_idx, stpm_idx, fid_idx
 
     def closest_params(self, params):
-        # TODO: add new dimension
         drf = min(self.grid_file.drf_grid, key=lambda val: abs(val - params.drf))
         cfw = min(self.grid_file.cfw_grid, key=lambda val: abs(val - params.cfw))
         stpm = min(self.grid_file.stpm_grid, key=lambda val: abs(val - params.stpm))
+        fid = min(self._fid_grid, key=lambda val: abs(val - params.fidelity))
 
-        return drf, cfw, stpm
+        return drf, cfw, stpm, fid
 
     def output(self, params):
-        # TODO: improve interpolation with new dimension
 
         points = (
             np.asarray(self.grid_file.drf_grid), np.asarray(self.grid_file.cfw_grid),
-            np.asarray(self.grid_file.stpm_grid))
+            np.asarray(self.grid_file.stpm_grid),
+            np.asarray(self._fid_grid))
 
         params_fixed = self._fixed_params(params)
 
-        interp_mesh = np.array(np.meshgrid(params_fixed.drf, params_fixed.cfw, params_fixed.stpm))
-        interp_points = abs(np.rollaxis(interp_mesh, 0, 4).reshape((1, 3)))
+        interp_mesh = np.array(
+            np.meshgrid(params_fixed.drf, params_fixed.cfw, params_fixed.stpm, params_fixed.fidelity))
+        interp_points = abs(np.rollaxis(interp_mesh, 0, 4).reshape((1, 4)))
 
         out = np.zeros(len(self.stations))
         for i in range(0, len(self.stations)):
-            int_obs = interpn(np.asarray(points), self.err_grid[:, :, :, i], interp_points, method="linear",
+            int_obs = interpn(np.asarray(points), self.err_grid[:, :, :, :, i], interp_points, method="linear",
                               bounds_error=False)
             out[i] = int_obs
 
         return out
 
     def _fixed_params(self, params):
-        # TODO: add new dimension
         params_fixed = SWANParams(drf=min(max(params.drf, min(self.grid_file.drf_grid)), max(self.grid_file.drf_grid)),
                                   cfw=min(max(params.cfw, min(self.grid_file.cfw_grid)), max(self.grid_file.cfw_grid)),
                                   stpm=min(max(params.stpm, min(self.grid_file.stpm_grid)),
-                                           max(self.grid_file.stpm_grid)))
+                                           max(self.grid_file.stpm_grid)),
+                                  fidelity=params.fidelity)
         return params_fixed
 
     def output_no_int(self, params):
-        drf_idx, cfw_idx, stpm_idx = self.params_idxs(params=params)
+        drf_idx, cfw_idx, stpm_idx, fid_idx = self.params_idxs(params=params)
 
-        forecasts = [forecast for forecast in self.grid[drf_idx, cfw_idx, stpm_idx]]
+        forecasts = [forecast for forecast in self.grid[drf_idx, cfw_idx, stpm_idx, fid_idx]]
 
         out = []
         for forecast, observation in zip(forecasts, self.observations):

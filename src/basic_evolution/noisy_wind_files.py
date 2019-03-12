@@ -3,7 +3,7 @@ import os
 
 import re
 
-FORECAST_FILE_PATTERN = "K(\d)a_ns(\d+)_run(\d+)"
+FORECAST_FILE_PATTERN = "K(\d)a_ns(\d+)_run(\d+)_*"
 
 
 def forecast_files_from_dir(path):

@@ -140,3 +140,11 @@ def presented_fidelity(files, fidelity_pattern=FIDELITY_DIR_PATTERN):
             fidelity.append(int(match.groups()[0]))
 
     return fidelity
+
+
+def extracted_fidelity(file, fidelity_pattern=FIDELITY_DIR_PATTERN):
+    p = re.compile(fidelity_pattern)
+
+    match = p.search(file)
+
+    return int(match.groups()[0]) if match else ''
