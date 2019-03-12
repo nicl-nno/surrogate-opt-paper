@@ -8,7 +8,7 @@ from src.basic_evolution.model import (
 
 
 class Multifid:
-    def __init__(self, grid, fids, observations, path_to_forecasts, stations_to_out, error):
+    def __init__(self, grid, observations, path_to_forecasts, stations_to_out, error):
         '''
         Initialize an ensemble of FakeModels
         :param grid: CSVGridFile object with grid of model parameters
@@ -23,14 +23,12 @@ class Multifid:
         self.forecasts_dir = path_to_forecasts
         self.stations_to_out = stations_to_out
         self.error = error
-        self.models = self._initialized_models(fids=fids)
+        self.models = self._initialized_models()
 
-    def _initialized_models(self, fids):
-        models = []
-        for fid in fids:
-            models.append(FidelityFakeModel(grid_file=self.grid, observations=self.observations,
-                                            stations_to_out=self.stations_to_out, error=self.error,
-                                            forecasts_path=os.path.join(self.forecasts_dir), fidelity=fid))
+    def _initialized_models(self):
+        models = [FidelityFakeModel(grid_file=self.grid, observations=self.observations,
+                                    stations_to_out=self.stations_to_out, error=self.error,
+                                    forecasts_path=os.path.join(self.forecasts_dir))]
 
         return models
 

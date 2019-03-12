@@ -58,7 +58,7 @@ class AbstractFakeModel:
 
 
 class FidelityFakeModel(AbstractFakeModel):
-    def __init__(self, grid_file, error, observations, stations_to_out, forecasts_path, fidelity, noise_run=0):
+    def __init__(self, grid_file, error, observations, stations_to_out, forecasts_path, noise_run=0):
         '''
         :param grid_file: Path to grid file
         :param error: Error metrics to evaluate (forecasts - observations)
@@ -76,7 +76,6 @@ class FidelityFakeModel(AbstractFakeModel):
         self.observations = observations
         self.stations = stations_to_out
         self.forecasts_path = forecasts_path
-        self.fidelity = fidelity
         self.noise_run = noise_run
 
         self._fid_grid = sorted(presented_fidelity(forecast_files_from_dir(self.forecasts_path)))

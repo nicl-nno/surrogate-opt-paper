@@ -47,7 +47,7 @@ def model_all_stations():
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=ALL_STATIONS)]
 
     model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS, error=error_rmse_all,
-                              forecasts_path='../../../wind-fidelity/*', fidelity=30)
+                              forecasts_path='../../../wind-fidelity/*')
 
     return model
 
@@ -91,7 +91,7 @@ def optimize(train_stations, max_gens, pop_size, archive_size, crossover_rate, m
         [obs.time_series() for obs in
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=train_stations)]
 
-    ens = Multifid(grid=grid, fids=[30, 120, 240], observations=ww3_obs,
+    ens = Multifid(grid=grid, observations=ww3_obs,
                    path_to_forecasts='../../../wind-fidelity/*',
                    stations_to_out=train_stations, error=error_rmse_all)
 
@@ -173,7 +173,7 @@ def run_robustess_exp_ens(max_gens, pop_size, archive_size, crossover_rate, muta
                                                                stations=ALL_STATIONS))
 
     old_path = '../../../wind-fidelity/out'
-    train_model = Multifid(grid=grid, noise_cases=[30, 120, 240],
+    train_model = Multifid(grid=grid,
                            observations=ww3_obs,
                            path_to_forecasts=old_path,
                            stations_to_out=stations, error=error_rmse_all)
