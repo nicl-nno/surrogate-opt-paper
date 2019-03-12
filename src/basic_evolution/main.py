@@ -62,7 +62,7 @@ def model_all_stations():
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=ALL_STATIONS)]
 
     model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS, error=error_rmse_all,
-                              forecasts_path='../../../wind-fidelity/out', fidelity=240)
+                              forecasts_path='../../../wind-fidelity/*')
 
     return model
 
@@ -119,7 +119,7 @@ def run_genetic_opt(max_gens, pop_size, archive_size, crossover_rate, mutation_r
 
     train_model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=stations,
                                     error=error_rmse_all,
-                                    forecasts_path='../../../wind-fidelity/out', fidelity=30)
+                                    forecasts_path='../../../wind-fidelity/*')
     test_model = model_all_stations()
 
     history, archive_history = SPEA2(
@@ -260,7 +260,7 @@ def init_models_to_tests():
     for metric_name in metrics.keys():
         model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS,
                                   error=metrics[metric_name],
-                                  forecasts_path='../../../wind-fidelity/out', fidelity=30)
+                                  forecasts_path='../../../wind-fidelity/*')
         models[metric_name] = model
 
     return models
@@ -295,8 +295,7 @@ def prepare_all_fake_models():
                      wave_watch_results(path_to_results='../../samples/ww-res/', stations=stations)]
                 _ = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=stations,
                                       error=err,
-                                      forecasts_path=f'../../../wind-fidelity/out',
-                                      fidelity=fid)
+                                      forecasts_path=f'../../../wind-fidelity/*')
 
 
 def reference_metrics():
@@ -314,7 +313,7 @@ def optimize_by_ww3_obs(train_stations, max_gens, pop_size, archive_size, crosso
 
     error = error_rmse_all
     train_model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=train_stations, error=error,
-                                    forecasts_path='../../../wind-fidelity/out', fidelity=240)
+                                    forecasts_path='../../../wind-fidelity/*')
 
     history, archive_history = SPEA2(
         params=SPEA2.Params(max_gens, pop_size=pop_size, archive_size=archive_size,
