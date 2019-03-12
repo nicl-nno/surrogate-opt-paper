@@ -125,3 +125,26 @@ def wave_watch_results(path_to_results=PATH_TO_WW3_RESULTS, stations=None):
     result = [WaveWatchObservationFile(file) for file in sorted(files)]
     return result
 
+
+FIDELITY_DIR_PATTERN = 'out_(\d+)'
+
+
+def presented_fidelity(files, fidelity_pattern=FIDELITY_DIR_PATTERN):
+    p = re.compile(fidelity_pattern)
+
+    fidelity = []
+    for file in files:
+        match = p.search(file)
+
+        if match and int(match.groups()[0]) not in fidelity:
+            fidelity.append(int(match.groups()[0]))
+
+    return fidelity
+
+
+def extracted_fidelity(file, fidelity_pattern=FIDELITY_DIR_PATTERN):
+    p = re.compile(fidelity_pattern)
+
+    match = p.search(file)
+
+    return int(match.groups()[0]) if match else ''

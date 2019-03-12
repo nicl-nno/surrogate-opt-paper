@@ -9,7 +9,6 @@ from multiprocessing import Pool
 import numpy as np
 from tqdm import tqdm
 
-from src.evolution.spea2 import SPEA2
 from src.basic_evolution.errors import (
     error_rmse_all,
     error_mae_all,
@@ -24,9 +23,10 @@ from src.basic_evolution.evo_operators import (
 )
 from src.basic_evolution.model import (
     CSVGridFile,
-    FakeModel
+    FidelityFakeModel
 )
 from src.basic_evolution.model import SWANParams
+from src.evolution.spea2 import SPEA2
 from src.utils.files import (
     wave_watch_results
 )
@@ -61,8 +61,8 @@ def model_all_stations():
         [obs.time_series() for obs in
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=ALL_STATIONS)]
 
-    model = FakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS, error=error_rmse_all,
-                      forecasts_path='../../../wind-fidelity/out', fidelity=240)
+    model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS, error=error_rmse_all,
+                              forecasts_path='../../../wind-fidelity/out', fidelity=240)
 
     return model
 
@@ -117,8 +117,9 @@ def run_genetic_opt(max_gens, pop_size, archive_size, crossover_rate, mutation_r
     ww3_obs = \
         [obs.time_series() for obs in wave_watch_results(path_to_results='../../samples/ww-res/', stations=stations)]
 
-    train_model = FakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=stations, error=error_rmse_all,
-                            forecasts_path='../../../wind-fidelity/out', fidelity=30)
+    train_model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=stations,
+                                    error=error_rmse_all,
+                                    forecasts_path='../../../wind-fidelity/out', fidelity=30)
     test_model = model_all_stations()
 
     history, archive_history = SPEA2(
@@ -164,12 +165,10 @@ objective_manual = {'a': 0, 'archive_size_rate': 0.25, 'crossover_rate': 0.7,
                     'max_gens': 60, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
                     'mutation_p3': 0.001, 'mutation_rate': 0.7, 'pop_size': 20}
 
-
 stations_for_run_set = [[1, 2, 3, 4, 5, 6]]
 
 
-def experiment_run(param_for_run,add_id):
-
+def experiment_run(param_for_run, add_id):
     exptime = str(datetime.datetime.now().time()).replace(":", "-")
     os.mkdir(f'../../{exptime}')
 
@@ -259,9 +258,9 @@ def init_models_to_tests():
 
     models = {}
     for metric_name in metrics.keys():
-        model = FakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS,
-                          error=metrics[metric_name],
-                          forecasts_path='../../../wind-fidelity/out', fidelity=30)
+        model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS,
+                                  error=metrics[metric_name],
+                                  forecasts_path='../../../wind-fidelity/out', fidelity=30)
         models[metric_name] = model
 
     return models
@@ -286,7 +285,7 @@ def all_error_metrics(params, models_to_tests):
 def prepare_all_fake_models():
     errors = [error_rmse_all]
     grid = CSVGridFile('../../samples/wind-exp-params-new.csv')
-    fids = [30,120,240]
+    fids = [30, 120, 240]
     for fid in fids:
         for err in errors:
             for stations in stations_for_run_set:
@@ -294,15 +293,16 @@ def prepare_all_fake_models():
                 ww3_obs = \
                     [obs.time_series() for obs in
                      wave_watch_results(path_to_results='../../samples/ww-res/', stations=stations)]
-                _ = FakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=stations,
-                              error=err,
-                              forecasts_path=f'../../../wind-fidelity/out',
-                              fidelity=fid)
+                _ = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=stations,
+                                      error=err,
+                                      forecasts_path=f'../../../wind-fidelity/out',
+                                      fidelity=fid)
 
 
 def reference_metrics():
     return all_error_metrics(params=SWANParams(drf=1.0, cfw=0.015, stpm=0.00302),
                              models_to_tests=init_models_to_tests())
+
 
 def optimize_by_ww3_obs(train_stations, max_gens, pop_size, archive_size, crossover_rate, mutation_rate,
                         mutation_value_rate, iter_ind, plot_figures=True):
@@ -313,8 +313,8 @@ def optimize_by_ww3_obs(train_stations, max_gens, pop_size, archive_size, crosso
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=train_stations)]
 
     error = error_rmse_all
-    train_model = FakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=train_stations, error=error,
-                            forecasts_path='../../../wind-fidelity/out', fidelity=30)
+    train_model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=train_stations, error=error,
+                                    forecasts_path='../../../wind-fidelity/out', fidelity=240)
 
     history, archive_history = SPEA2(
         params=SPEA2.Params(max_gens, pop_size=pop_size, archive_size=archive_size,
@@ -354,22 +354,13 @@ def optimize_by_ww3_obs(train_stations, max_gens, pop_size, archive_size, crosso
 
 
 if __name__ == '__main__':
-    #experiment_run()
 
-   # optimize_by_ww3_obs([1], max_gens=20, pop_size=20, archive_size=10, crossover_rate=0.7, mutation_rate=0.7,
-    #                        mutation_value_rate=[0.05, 0.001, 0.0005], iter_ind=0, plot_figures=True)
-
-    ind=0
-    for max_gen in range(4,15,1):
+    ind = 0
+    for max_gen in range(4, 15, 1):
         for pop_size in range(4, 15, 1):
-            #optimize_by_ww3_obs([1,2,3,4,5,6,7,8,9], max_gens=max_gen, pop_size=pop_size, archive_size=round(pop_size/3), crossover_rate=0.7, mutation_rate=0.7,
-            #                    mutation_value_rate=[0.05, 0.001, 0.0005], iter_ind=0, plot_figures=False)
-
             objective_manual = {'a': 0, 'archive_size_rate': 0.25, 'crossover_rate': 0.7,
                                 'max_gens': max_gen, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
                                 'mutation_p3': 0.001, 'mutation_rate': 0.7, 'pop_size': pop_size}
 
-
-
             experiment_run(objective_manual, ind)
-            ind=ind+1
+            ind = ind + 1

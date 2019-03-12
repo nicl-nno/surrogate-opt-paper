@@ -6,7 +6,7 @@ import seaborn as sns
 from mpl_toolkits.mplot3d import Axes3D
 
 from src.basic_evolution.model import (
-    FakeModel,
+    FidelityFakeModel,
     CSVGridFile
 )
 from src.basic_evolution.model import SWANParams
@@ -80,7 +80,7 @@ def plot_params_space():
     grid = CSVGridFile('../../samples/wind-exp-params.csv')
     forecasts_path = '../../../samples/wind-noice-runs/results/1/'
 
-    fake = FakeModel(grid_file=grid, forecasts_path=forecasts_path)
+    fake = FidelityFakeModel(grid_file=grid, forecasts_path=forecasts_path)
 
     drf, cfw = np.meshgrid(fake.grid_file.drf_grid, fake.grid_file.cfw_grid)
     stpm_fixed = fake.grid_file.stpm_grid[0]
@@ -104,7 +104,7 @@ def plot_error_variance(station_index=2, stmp_index=3):
     grid = CSVGridFile('../../samples/wind-exp-params.csv')
 
     for noise in noise_dirs.keys():
-        model = FakeModel(grid_file=grid, forecasts_path=noise_dirs[noise], fidelity=noise)
+        model = FidelityFakeModel(grid_file=grid, forecasts_path=noise_dirs[noise], fidelity=noise)
         model_by_noise[noise] = model
 
     fig = plt.figure()
