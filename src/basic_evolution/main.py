@@ -157,26 +157,15 @@ def run_genetic_opt(max_gens, pop_size, archive_size, crossover_rate, mutation_r
     return history.last()
 
 
-objective_manual_old = {'a': 0, 'archive_size_rate': 0.25, 'crossover_rate': 0.7,
-                        'max_gens': 15, 'mutation_p1': 0.1, 'mutation_p2': 0.001,
-                        'mutation_p3': 0.0001, 'mutation_rate': 0.7, 'pop_size': 20}
-
-objective_manual = {'a': 0, 'archive_size_rate': 0.25, 'crossover_rate': 0.7,
-                    'max_gens': 60, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
-                    'mutation_p3': 0.001, 'mutation_rate': 0.7, 'pop_size': 20}
-
-stations_for_run_set = [[1, 2, 3, 4, 5, 6]]
+stations_for_train_set = [1, 2, 3, 4, 5, 6]
 
 
-def experiment_run(param_for_run, add_id):
-    exptime = str(datetime.datetime.now().time()).replace(":", "-")
-    os.mkdir(f'../../{exptime}')
-
-    iterations = 10
+def experiment_run(param_for_run, add_id, path_to_results):
+    iterations = 5
     run_by = 'rmse_all'
 
-    file_name = f'../bl-{run_by}-add2_{add_id}-runs.csv'
-    with open(file_name, 'w', newline='') as csvfile:
+    file_name = f'bl-{run_by}-add2_{add_id}-runs.csv'
+    with open(os.path.join(path_to_results, file_name), 'w', newline='') as csvfile:
         fieldnames = ['ID', 'IterId', 'SetId', 'drf', 'cfw', 'stpm',
                       'rmse_all', 'rmse_peak', 'mae_all', 'mae_peak']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -187,47 +176,42 @@ def experiment_run(param_for_run, add_id):
 
     cpu_count = 8
 
-    for iteration in range(iterations):
-        print(f'### ITERATION : {iteration}')
-        results = []
-        with Pool(processes=cpu_count) as p:
-            runs_total = len(stations_for_run_set)
-            fig_paths = [os.path.join('../..', exptime, str(iteration * runs_total + run)) for run in range(runs_total)]
-            all_packed_params = []
-            runs_range = list(range(0, len(stations_for_run_set)))
-            for st_set_id, station, params, fig_path in zip(runs_range, stations_for_run_set, repeat(param_for_run),
-                                                            fig_paths):
-                all_packed_params.append([st_set_id, station, params, fig_path])
+    all_packed_params = []
 
-            with tqdm(total=runs_total) as progress_bar:
-                for _, out in tqdm(enumerate(p.imap(opt_run, all_packed_params))):
-                    results.append(out)
-                    progress_bar.update()
+    for st_set_id, stations_to_train, params in zip(list(range(iterations)), repeat(stations_for_train_set),
+                                                    repeat(param_for_run)):
+        all_packed_params.append([st_set_id, stations_to_train, params])
 
-        for idx, out in enumerate(results):
-            st_set_id_from_param, best = out
+    results = []
+    with Pool(processes=cpu_count) as p:
+        with tqdm(total=iterations) as progress_bar:
+            for _, out in tqdm(enumerate(p.imap(opt_run, all_packed_params))):
+                results.append(out)
+                progress_bar.update()
 
-            with open(file_name, 'a', newline='') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    for out in results:
+        run_id, best = out
+        with open(os.path.join(path_to_results, file_name), 'a', newline='') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
-                row_to_write = {'ID': iteration * runs_total + idx, 'IterId': iteration, 'SetId': st_set_id_from_param,
-                                'drf': best.genotype.drf,
-                                'cfw': best.genotype.cfw,
-                                'stpm': best.genotype.stpm}
-                metrics = all_error_metrics(best.genotype, models_to_tests)
-                for metric_name in metrics.keys():
-                    stations_metrics = metrics[metric_name]
-                    stations_to_write = {}
-                    for station_idx in range(len(stations_metrics)):
-                        key = f'st{station_idx + 1}'
-                        stations_to_write.update({key: stations_metrics[station_idx]})
-                    row_to_write.update({metric_name: stations_to_write})
+            row_to_write = {'ID': run_id, 'IterId': 0, 'SetId': 0,
+                            'drf': best.genotype.drf,
+                            'cfw': best.genotype.cfw,
+                            'stpm': best.genotype.stpm}
+            metrics = all_error_metrics(best.genotype, models_to_tests)
+            for metric_name in metrics.keys():
+                stations_metrics = metrics[metric_name]
+                stations_to_write = {}
+                for station_idx in range(len(stations_metrics)):
+                    key = f'st{station_idx + 1}'
+                    stations_to_write.update({key: stations_metrics[station_idx]})
+                row_to_write.update({metric_name: stations_to_write})
 
-                writer.writerow(row_to_write)
+            writer.writerow(row_to_write)
 
 
 def opt_run(packed_args):
-    st_set_id, stations_for_run, param_for_run, figure_path = packed_args
+    st_set_id, stations_for_run, param_for_run = packed_args
     print(stations_for_run)
     archive_size = round(param_for_run['archive_size_rate'] * param_for_run['pop_size'])
     mutation_value_rate = [param_for_run['mutation_p1'], param_for_run['mutation_p2'],
@@ -239,8 +223,7 @@ def opt_run(packed_args):
                            mutation_rate=param_for_run['mutation_rate'],
                            mutation_value_rate=mutation_value_rate,
                            stations=stations_for_run,
-                           save_figures=False,
-                           figure_path=figure_path)
+                           save_figures=False)
 
     return st_set_id, best
 
@@ -280,22 +263,6 @@ def all_error_metrics(params, models_to_tests):
         out[metric_name] = model.output(params=params)
 
     return out
-
-
-def prepare_all_fake_models():
-    errors = [error_rmse_all]
-    grid = CSVGridFile('../../samples/wind-exp-params-new.csv')
-    fids = [30, 120, 240]
-    for fid in fids:
-        for err in errors:
-            for stations in stations_for_run_set:
-                print(f'configure model for: noise = {noise}; error = {err}; stations = {stations}')
-                ww3_obs = \
-                    [obs.time_series() for obs in
-                     wave_watch_results(path_to_results='../../samples/ww-res/', stations=stations)]
-                _ = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=stations,
-                                      error=err,
-                                      forecasts_path=f'../../../wind-fidelity/*')
 
 
 def reference_metrics():
@@ -352,14 +319,21 @@ def optimize_by_ww3_obs(train_stations, max_gens, pop_size, archive_size, crosso
     return history
 
 
-if __name__ == '__main__':
+def multiple_runs():
+    exptime = str(datetime.datetime.now().time()).replace(":", "-")
+    path_to_results = f'../../multiple_runs_{exptime}'
+    os.mkdir(path_to_results)
 
     ind = 0
     for max_gen in range(4, 15, 1):
-        for pop_size in range(4, 15, 1):
-            objective_manual = {'a': 0, 'archive_size_rate': 0.25, 'crossover_rate': 0.7,
-                                'max_gens': max_gen, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
-                                'mutation_p3': 0.001, 'mutation_rate': 0.7, 'pop_size': pop_size}
+        for pop_size in range(10, 20, 1):
+            meta_params = {'archive_size_rate': 0.25, 'crossover_rate': 0.7,
+                           'max_gens': max_gen, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
+                           'mutation_p3': 0.001, 'mutation_rate': 0.7, 'pop_size': pop_size}
 
-            experiment_run(objective_manual, ind)
+            experiment_run(meta_params, ind, path_to_results)
             ind = ind + 1
+
+
+if __name__ == '__main__':
+    multiple_runs()
