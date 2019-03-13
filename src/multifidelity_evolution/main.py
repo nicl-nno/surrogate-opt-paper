@@ -91,25 +91,25 @@ def optimize(train_stations, max_gens, pop_size, archive_size, crossover_rate, m
         [obs.time_series() for obs in
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=train_stations)]
 
-    ens = Multifid(grid=grid, observations=ww3_obs,
-                   path_to_forecasts='../../../wind-fidelity/*',
-                   stations_to_out=train_stations, error=error_rmse_all)
+    model = FidelityFakeModel(grid_file=grid, observations=ww3_obs,
+                              stations_to_out=train_stations, error=error_rmse_all,
+                              forecasts_path='../../../wind-fidelity/*')
 
     history, archive_history = SPEA2(
         params=SPEA2.Params(max_gens, pop_size=pop_size, archive_size=archive_size,
                             crossover_rate=crossover_rate, mutation_rate=mutation_rate,
                             mutation_value_rate=mutation_value_rate),
         init_population=initial_pop_lhs,
-        objectives=partial(calculate_objectives_interp, ens),
+        objectives=partial(calculate_objectives_interp, model),
         crossover=crossover,
         mutation=mutation).solution()
 
     params = history.last().genotype
 
-    save_archive_history(archive_history, f'history-ens-{iter_ind}.csv')
+    save_archive_history(archive_history, f'history-baseline-{iter_ind}.csv')
     test_model = model_all_stations()
 
-    if (plot_figures):
+    if plot_figures:
 
         closest_hist = test_model.closest_params(params)
         closest_params_set_hist = SWANParams(drf=closest_hist[0], cfw=closest_hist[1], stpm=closest_hist[2])

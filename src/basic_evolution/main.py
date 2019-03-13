@@ -165,7 +165,7 @@ objective_manual = {'a': 0, 'archive_size_rate': 0.25, 'crossover_rate': 0.7,
                     'max_gens': 60, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
                     'mutation_p3': 0.001, 'mutation_rate': 0.7, 'pop_size': 20}
 
-stations_for_run_set = [[1, 2, 3, 4, 5, 6]]
+stations_for_run_set = [[1, 2, 3, 4, 5, 6], [1, 2, 3]]
 
 
 def experiment_run(param_for_run, add_id):
@@ -185,7 +185,7 @@ def experiment_run(param_for_run, add_id):
 
     models_to_tests = init_models_to_tests()
 
-    cpu_count = 8
+    cpu_count = 2
 
     for iteration in range(iterations):
         print(f'### ITERATION : {iteration}')
@@ -356,7 +356,7 @@ if __name__ == '__main__':
 
     ind = 0
     for max_gen in range(4, 15, 1):
-        for pop_size in range(4, 15, 1):
+        for pop_size in range(10, 20, 1):
             objective_manual = {'a': 0, 'archive_size_rate': 0.25, 'crossover_rate': 0.7,
                                 'max_gens': max_gen, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
                                 'mutation_p3': 0.001, 'mutation_rate': 0.7, 'pop_size': pop_size}
