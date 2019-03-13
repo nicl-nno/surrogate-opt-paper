@@ -282,22 +282,6 @@ def all_error_metrics(params, models_to_tests):
     return out
 
 
-def prepare_all_fake_models():
-    errors = [error_rmse_all]
-    grid = CSVGridFile('../../samples/wind-exp-params-new.csv')
-    fids = [30, 120, 240]
-    for fid in fids:
-        for err in errors:
-            for stations in stations_for_run_set:
-                print(f'configure model for: noise = {noise}; error = {err}; stations = {stations}')
-                ww3_obs = \
-                    [obs.time_series() for obs in
-                     wave_watch_results(path_to_results='../../samples/ww-res/', stations=stations)]
-                _ = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=stations,
-                                      error=err,
-                                      forecasts_path=f'../../../wind-fidelity/*')
-
-
 def reference_metrics():
     return all_error_metrics(params=SWANParams(drf=1.0, cfw=0.015, stpm=0.00302),
                              models_to_tests=init_models_to_tests())
