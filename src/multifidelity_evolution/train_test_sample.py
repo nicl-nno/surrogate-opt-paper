@@ -39,7 +39,7 @@ def model_all_stations(forecasts_range=(0, 1)):
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=ALL_STATIONS)]
 
     model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS, error=error_rmse_all,
-                              forecasts_path='../../../wind-fidelity/*', forecasts_range=forecasts_range)
+                              forecasts_path='../../../2fidelity/*', forecasts_range=forecasts_range)
 
     return model
 
@@ -53,8 +53,8 @@ def default_params_forecasts(model):
                                                             cfw=0.015,
                                                             stpm=0.00302))
     default_params = SWANParams(drf=closest_params[0], cfw=closest_params[1], stpm=closest_params[2])
-    drf_idx, cfw_idx, stpm_idx, fid_idx = model.params_idxs(default_params)
-    forecasts = model.grid[drf_idx, cfw_idx, stpm_idx, fid_idx]
+    drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx = model.params_idxs(default_params)
+    forecasts = model.grid[drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx]
 
     return forecasts
 
@@ -72,7 +72,7 @@ def optimize_test(train_stations, max_gens, pop_size, archive_size, crossover_ra
 
     error = error_rmse_all
     train_model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=train_stations, error=error,
-                                    forecasts_path='../../../wind-fidelity/*', forecasts_range=train_range)
+                                    forecasts_path='../../../2fidelity/*', forecasts_range=train_range)
 
     history, archive_history = SPEA2(
         params=SPEA2.Params(max_gens, pop_size=pop_size, archive_size=archive_size,
@@ -95,8 +95,8 @@ def optimize_test(train_stations, max_gens, pop_size, archive_size, crossover_ra
         for row in grid.rows:
 
             if set(row.model_params.params_list()) == set(closest_params_set_hist.params_list()):
-                drf_idx, cfw_idx, stpm_idx, fid_idx = test_model.params_idxs(row.model_params)
-                forecasts = test_model.grid[drf_idx, cfw_idx, stpm_idx, fid_idx]
+                drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx = test_model.params_idxs(row.model_params)
+                forecasts = test_model.grid[drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx]
                 if grid.rows.index(row) < 100:
                     print("!!!")
                 print("index : %d" % grid.rows.index(row))

@@ -78,7 +78,7 @@ def error_grid(noise_case=0):
         for row in grid.rows:
             metrics = model_all.output(
                 params=SWANParams(drf=row.model_params.drf, cfw=row.model_params.cfw,
-                                  stpm=row.model_params.stpm, fidelity=fidelity))
+                                  stpm=row.model_params.stpm, fidelity_time=fidelity))
             row_to_write = row.model_params.params_list()
             row_to_write.extend(metrics)
             writer.writerow(row_to_write)
