@@ -235,15 +235,31 @@ class FidelityFakeModel(AbstractFakeModel):
         return out
 
     class Forecast:
-        def __init__(self, station_idx, forecast_file):
+        def __init__(self, station_idx, forecast_file, range_values=(0, 1)):
+            '''
+
+            :param station_idx: Index of a station
+            :param forecast_file: Path to file with forecasts
+            :param range_values: tuple with relative indexes of a sublist to extract, default = (0, 1) - full list
+            '''
+
             self.station_idx = station_idx
             self.file = forecast_file
+            self.range_values = range_values
 
-            self.hsig_series = self._station_series()
+            assert 0 <= self.range_values[0] <= self.range_values[1] <= 1
+
+            self.hsig_series = self._from_range(self._station_series())
 
         def _station_series(self):
             hsig_idx = 1
             return [float(line.split(',')[hsig_idx]) for line in self.file.time_series()]
+
+        def _from_range(self, series):
+            from_idx = int(len(series) * self.range_values[0])
+            to_idx = int(len(series) * self.range_values[1])
+
+            return series[from_idx:to_idx]
 
 
 class CSVGridFile:
