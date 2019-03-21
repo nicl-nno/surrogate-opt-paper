@@ -15,7 +15,8 @@ from src.basic_evolution.noisy_wind_files import (
 from src.utils.files import (
     ForecastFile,
     extracted_fidelity,
-    presented_fidelity
+    presented_fidelity,
+    observations_from_range
 )
 
 drf_range = [0.2, 0.4, 0.6000000000000001, 0.8, 1.0, 1.2, 1.4, 1.5999999999999999, 1.7999999999999998,
@@ -58,7 +59,7 @@ class AbstractFakeModel:
 
 
 class FidelityFakeModel(AbstractFakeModel):
-    def __init__(self, grid_file, error, observations, stations_to_out, forecasts_path, noise_run=0):
+    def __init__(self, grid_file, error, observations, stations_to_out, forecasts_path, noise_run=0, **kwargs):
         '''
         :param grid_file: Path to grid file
         :param error: Error metrics to evaluate (forecasts - observations)
@@ -77,6 +78,11 @@ class FidelityFakeModel(AbstractFakeModel):
         self.stations = stations_to_out
         self.forecasts_path = forecasts_path
         self.noise_run = noise_run
+
+        if 'forecasts_range' in kwargs:
+            self.forecasts_range = kwargs['forecasts_range']
+        else:
+            self.forecasts_range = (0, 1)
 
         self._fid_grid = sorted(presented_fidelity(forecast_files_from_dir(self.forecasts_path)))
         self._init_grids()
@@ -107,7 +113,8 @@ class FidelityFakeModel(AbstractFakeModel):
                 files = files_by_fidelity[fidelity]
                 forecasts = []
                 for idx, file_name in enumerate(files):
-                    forecasts.append(FidelityFakeModel.Forecast(self.stations[idx], ForecastFile(path=file_name)))
+                    forecasts.append(FidelityFakeModel.Forecast(self.stations[idx], ForecastFile(path=file_name),
+                                                                range_values=self.forecasts_range))
 
                 drf_idx, cfw_idx, stpm_idx, fid_idx = self.params_idxs(params=SWANParams(drf=row.model_params.drf,
                                                                                          cfw=row.model_params.cfw,
@@ -131,7 +138,9 @@ class FidelityFakeModel(AbstractFakeModel):
                 forecasts = [forecast for forecast in self.grid[i, j, k, m]]
                 for forecast, observation in zip(forecasts, self.observations):
                     station_idx = forecasts.index(forecast)
-                    self.err_grid[i, j, k, m, station_idx] = self.error(forecast, observation)
+
+                    obs_in_range = observations_from_range(observation, self.forecasts_range)
+                    self.err_grid[i, j, k, m, station_idx] = self.error(forecast, obs_in_range)
 
             pickle_out = open(grid_file_path, 'wb')
             pickle.dump(self.err_grid, pickle_out)

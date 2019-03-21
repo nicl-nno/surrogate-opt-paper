@@ -7,7 +7,8 @@ from src.basic_evolution.errors import (
 )
 from src.basic_evolution.model import (
     CSVGridFile,
-    FidelityFakeModel
+    FidelityFakeModel,
+    SWANParams
 )
 from src.utils.files import (
     wave_watch_results
@@ -73,8 +74,11 @@ def error_grid(noise_case=0):
         header.extend(error_columns)
         writer.writerow(header)
 
+        fidelity = 240
         for row in grid.rows:
-            metrics = model_all.output(params=row.model_params)
+            metrics = model_all.output(
+                params=SWANParams(drf=row.model_params.drf, cfw=row.model_params.cfw,
+                                  stpm=row.model_params.stpm, fidelity=fidelity))
             row_to_write = row.model_params.params_list()
             row_to_write.extend(metrics)
             writer.writerow(row_to_write)

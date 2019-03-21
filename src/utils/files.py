@@ -95,6 +95,17 @@ class WaveWatchObservationFile:
         return match.groups()[0]
 
 
+def observations_from_range(observations, range_values):
+    # TODO: possible duplicate with Forecast._from_range()
+
+    assert 0 <= range_values[0] <= range_values[1] <= 1
+
+    from_idx = int(len(observations) * range_values[0])
+    to_idx = int(len(observations) * range_values[1])
+
+    return observations[from_idx:to_idx]
+
+
 def real_obs_from_files():
     files = ["../../samples/obs/1a_waves.txt", "../../samples/obs/2a_waves.txt",
              "../../samples/obs/3a_waves.txt"]
