@@ -15,7 +15,8 @@ from src.basic_evolution.noisy_wind_files import (
 from src.utils.files import (
     ForecastFile,
     extracted_fidelity,
-    presented_fidelity
+    presented_fidelity,
+    observations_from_range
 )
 
 drf_range = [0.2, 0.4, 0.6000000000000001, 0.8, 1.0, 1.2, 1.4, 1.5999999999999999, 1.7999999999999998,
@@ -33,20 +34,22 @@ class SWANParams:
     def new_instance():
         return SWANParams(drf=random.choice(drf_range), cfw=random.choice(cfw_range), stpm=random.choice(stpm_range))
 
-    def __init__(self, drf, cfw, stpm, fidelity=240):
+    def __init__(self, drf, cfw, stpm, fidelity_time=60, fidelity_space=14):
         self.drf = drf
         self.cfw = cfw
         self.stpm = stpm
-        self.fidelity = fidelity
+        self.fid_time = fidelity_time
+        self.fid_space = fidelity_space
 
-    def update(self, drf, cfw, stpm, fidelity):
+    def update(self, drf, cfw, stpm, fidelity_time, fidelity_space):
         self.drf = drf
         self.cfw = cfw
         self.stpm = stpm
-        self.fidelity = fidelity
+        self.fid_time = fidelity_time
+        self.fid_space = fidelity_space
 
     def params_list(self):
-        return [self.drf, self.cfw, self.stpm, self.fidelity]
+        return [self.drf, self.cfw, self.stpm, self.fid_time, self.fid_space]
 
 
 class AbstractFakeModel:
@@ -58,7 +61,7 @@ class AbstractFakeModel:
 
 
 class FidelityFakeModel(AbstractFakeModel):
-    def __init__(self, grid_file, error, observations, stations_to_out, forecasts_path, noise_run=0):
+    def __init__(self, grid_file, error, observations, stations_to_out, forecasts_path, noise_run=0, **kwargs):
         '''
         :param grid_file: Path to grid file
         :param error: Error metrics to evaluate (forecasts - observations)
@@ -78,8 +81,18 @@ class FidelityFakeModel(AbstractFakeModel):
         self.forecasts_path = forecasts_path
         self.noise_run = noise_run
 
-        self._fid_grid = sorted(presented_fidelity(forecast_files_from_dir(self.forecasts_path)))
+        if 'forecasts_range' in kwargs:
+            self.forecasts_range = kwargs['forecasts_range']
+        else:
+            self.forecasts_range = (0, 1)
+
+        self._init_fidelity_grids()
         self._init_grids()
+
+    def _init_fidelity_grids(self):
+        fid_time, fid_space = presented_fidelity(forecast_files_from_dir(self.forecasts_path))
+        self._fid_time_grid = sorted(fid_time)
+        self._fid_space_grid = sorted(fid_space)
 
     def _init_grids(self):
         self.grid = self._empty_grid()
@@ -107,13 +120,18 @@ class FidelityFakeModel(AbstractFakeModel):
                 files = files_by_fidelity[fidelity]
                 forecasts = []
                 for idx, file_name in enumerate(files):
-                    forecasts.append(FidelityFakeModel.Forecast(self.stations[idx], ForecastFile(path=file_name)))
+                    forecasts.append(FidelityFakeModel.Forecast(self.stations[idx], ForecastFile(path=file_name),
+                                                                range_values=self.forecasts_range))
 
-                drf_idx, cfw_idx, stpm_idx, fid_idx = self.params_idxs(params=SWANParams(drf=row.model_params.drf,
-                                                                                         cfw=row.model_params.cfw,
-                                                                                         stpm=row.model_params.stpm,
-                                                                                         fidelity=fidelity))
-                self.grid[drf_idx, cfw_idx, stpm_idx, fid_idx] = forecasts
+                fid_time, fid_space = fidelity
+                drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx = self.params_idxs(
+                    params=SWANParams(drf=row.model_params.drf,
+                                      cfw=row.model_params.cfw,
+                                      stpm=row.model_params.stpm,
+                                      fidelity_time=fid_time,
+                                      fidelity_space=fid_space))
+
+                self.grid[drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx] = forecasts
 
         # empty array
         self.err_grid = np.zeros(shape=self.grid.shape + (len(stations),))
@@ -127,11 +145,13 @@ class FidelityFakeModel(AbstractFakeModel):
         if not os.path.isfile(grid_file_path):
             grid_idxs = self.__grid_idxs()
 
-            for i, j, k, m in grid_idxs:
-                forecasts = [forecast for forecast in self.grid[i, j, k, m]]
+            for i, j, k, m, n in grid_idxs:
+                forecasts = [forecast for forecast in self.grid[i, j, k, m, n]]
                 for forecast, observation in zip(forecasts, self.observations):
                     station_idx = forecasts.index(forecast)
-                    self.err_grid[i, j, k, m, station_idx] = self.error(forecast, observation)
+
+                    obs_in_range = observations_from_range(observation, self.forecasts_range)
+                    self.err_grid[i, j, k, m, n, station_idx] = self.error(forecast, obs_in_range)
 
             pickle_out = open(grid_file_path, 'wb')
             pickle.dump(self.err_grid, pickle_out)
@@ -147,7 +167,8 @@ class FidelityFakeModel(AbstractFakeModel):
             for j in range(self.grid.shape[1]):
                 for k in range(self.grid.shape[2]):
                     for m in range(self.grid.shape[3]):
-                        idxs.append([i, j, k, m])
+                        for n in range(self.grid.shape[4]):
+                            idxs.append([i, j, k, m, n])
         return idxs
 
     def _errors_at_point(self, packed_values):
@@ -163,7 +184,8 @@ class FidelityFakeModel(AbstractFakeModel):
         return np.empty((len(self.grid_file.drf_grid),
                          len(self.grid_file.cfw_grid),
                          len(self.grid_file.stpm_grid),
-                         len(self._fid_grid)),
+                         len(self._fid_time_grid),
+                         len(self._fid_space_grid)),
                         dtype=list)
 
     def _files_by_fidelity(self, files):
@@ -182,30 +204,33 @@ class FidelityFakeModel(AbstractFakeModel):
         drf_idx = self.grid_file.drf_grid.index(params.drf)
         cfw_idx = self.grid_file.cfw_grid.index(params.cfw)
         stpm_idx = self.grid_file.stpm_grid.index(params.stpm)
-        fid_idx = self._fid_grid.index(params.fidelity)
+        fid_time_idx = self._fid_time_grid.index(params.fid_time)
+        fid_space_idx = self._fid_space_grid.index(params.fid_space)
 
-        return drf_idx, cfw_idx, stpm_idx, fid_idx
+        return drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx
 
     def closest_params(self, params):
         drf = min(self.grid_file.drf_grid, key=lambda val: abs(val - params.drf))
         cfw = min(self.grid_file.cfw_grid, key=lambda val: abs(val - params.cfw))
         stpm = min(self.grid_file.stpm_grid, key=lambda val: abs(val - params.stpm))
-        fid = min(self._fid_grid, key=lambda val: abs(val - params.fidelity))
+        fid_time = min(self._fid_time_grid, key=lambda val: abs(val - params.fid_time))
+        fid_space = min(self._fid_space_grid, key=lambda val: abs(val - params.fid_space))
 
-        return drf, cfw, stpm, fid
+        return drf, cfw, stpm, fid_time, fid_space
 
     def output(self, params):
 
         points = (
             np.asarray(self.grid_file.drf_grid), np.asarray(self.grid_file.cfw_grid),
             np.asarray(self.grid_file.stpm_grid),
-            np.asarray(self._fid_grid))
+            np.asarray(self._fid_time_grid),
+            np.asarray(self._fid_space_grid))
 
         params_fixed = self._fixed_params(params)
 
         interp_mesh = np.array(
-            np.meshgrid(params_fixed.drf, params_fixed.cfw, params_fixed.stpm, params_fixed.fidelity))
-        interp_points = abs(np.rollaxis(interp_mesh, 0, 4).reshape((1, 4)))
+            np.meshgrid(params_fixed.drf, params_fixed.cfw, params_fixed.stpm, params_fixed.fid_time, params.fid_space))
+        interp_points = abs(np.rollaxis(interp_mesh, 0, 5).reshape((1, 5)))
 
         out = np.zeros(len(self.stations))
         for i in range(0, len(self.stations)):
@@ -220,13 +245,14 @@ class FidelityFakeModel(AbstractFakeModel):
                                   cfw=min(max(params.cfw, min(self.grid_file.cfw_grid)), max(self.grid_file.cfw_grid)),
                                   stpm=min(max(params.stpm, min(self.grid_file.stpm_grid)),
                                            max(self.grid_file.stpm_grid)),
-                                  fidelity=params.fidelity)
+                                  fidelity_time=params.fid_time,
+                                  fidelity_space=params.fid_space)
         return params_fixed
 
     def output_no_int(self, params):
-        drf_idx, cfw_idx, stpm_idx, fid_idx = self.params_idxs(params=params)
+        drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx = self.params_idxs(params=params)
 
-        forecasts = [forecast for forecast in self.grid[drf_idx, cfw_idx, stpm_idx, fid_idx]]
+        forecasts = [forecast for forecast in self.grid[drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx]]
 
         out = []
         for forecast, observation in zip(forecasts, self.observations):
@@ -235,15 +261,31 @@ class FidelityFakeModel(AbstractFakeModel):
         return out
 
     class Forecast:
-        def __init__(self, station_idx, forecast_file):
+        def __init__(self, station_idx, forecast_file, range_values=(0, 1)):
+            '''
+
+            :param station_idx: Index of a station
+            :param forecast_file: Path to file with forecasts
+            :param range_values: tuple with relative indexes of a sublist to extract, default = (0, 1) - full list
+            '''
+
             self.station_idx = station_idx
             self.file = forecast_file
+            self.range_values = range_values
 
-            self.hsig_series = self._station_series()
+            assert 0 <= self.range_values[0] <= self.range_values[1] <= 1
+
+            self.hsig_series = self._from_range(self._station_series())
 
         def _station_series(self):
             hsig_idx = 1
             return [float(line.split(',')[hsig_idx]) for line in self.file.time_series()]
+
+        def _from_range(self, series):
+            from_idx = int(len(series) * self.range_values[0])
+            to_idx = int(len(series) * self.range_values[1])
+
+            return series[from_idx:to_idx]
 
 
 class CSVGridFile:

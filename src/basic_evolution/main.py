@@ -76,8 +76,8 @@ def default_params_forecasts(model):
                                                             cfw=0.015,
                                                             stpm=0.00302))
     default_params = SWANParams(drf=closest_params[0], cfw=closest_params[1], stpm=closest_params[2])
-    drf_idx, cfw_idx, stpm_idx = model.params_idxs(default_params)
-    forecasts = model.grid[drf_idx, cfw_idx, stpm_idx]
+    drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx = model.params_idxs(default_params)
+    forecasts = model.grid[drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx]
 
     return forecasts
 
@@ -144,8 +144,8 @@ def run_genetic_opt(max_gens, pop_size, archive_size, crossover_rate, mutation_r
 
         for row in grid.rows:
             if set(row.model_params.params_list()) == set(closest_params_set_hist.params_list()):
-                drf_idx, cfw_idx, stpm_idx = test_model.params_idxs(row.model_params)
-                forecasts = test_model.grid[drf_idx, cfw_idx, stpm_idx]
+                drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx = test_model.params_idxs(row.model_params)
+                forecasts = test_model.grid[drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx]
                 break
 
         plot_results(forecasts=forecasts,
@@ -304,8 +304,8 @@ def optimize_by_ww3_obs(train_stations, max_gens, pop_size, archive_size, crosso
         for row in grid.rows:
 
             if set(row.model_params.params_list()) == set(closest_params_set_hist.params_list()):
-                drf_idx, cfw_idx, stpm_idx = test_model.params_idxs(row.model_params)
-                forecasts = test_model.grid[drf_idx, cfw_idx, stpm_idx]
+                drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx = test_model.params_idxs(row.model_params)
+                forecasts = test_model.grid[drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx]
                 if grid.rows.index(row) < 100:
                     print("!!!")
                 print("index : %d" % grid.rows.index(row))

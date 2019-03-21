@@ -95,6 +95,17 @@ class WaveWatchObservationFile:
         return match.groups()[0]
 
 
+def observations_from_range(observations, range_values):
+    # TODO: possible duplicate with Forecast._from_range()
+
+    assert 0 <= range_values[0] <= range_values[1] <= 1
+
+    from_idx = int(len(observations) * range_values[0])
+    to_idx = int(len(observations) * range_values[1])
+
+    return observations[from_idx:to_idx]
+
+
 def real_obs_from_files():
     files = ["../../samples/obs/1a_waves.txt", "../../samples/obs/2a_waves.txt",
              "../../samples/obs/3a_waves.txt"]
@@ -126,20 +137,28 @@ def wave_watch_results(path_to_results=PATH_TO_WW3_RESULTS, stations=None):
     return result
 
 
-FIDELITY_DIR_PATTERN = 'out_(\d+)'
+FIDELITY_DIR_PATTERN = 'out_(\d+)_(\d+)km'
 
 
 def presented_fidelity(files, fidelity_pattern=FIDELITY_DIR_PATTERN):
     p = re.compile(fidelity_pattern)
 
-    fidelity = []
+    fidelity_time = []
+    fidelity_space = []
+
     for file in files:
         match = p.search(file)
 
-        if match and int(match.groups()[0]) not in fidelity:
-            fidelity.append(int(match.groups()[0]))
+        if match:
+            fid_time = int(match.groups()[0])
+            fid_space = int(match.groups()[1])
 
-    return fidelity
+            if fid_time not in fidelity_time:
+                fidelity_time.append(fid_time)
+            if fid_space not in fidelity_space:
+                fidelity_space.append(fid_space)
+
+    return fidelity_time, fidelity_space
 
 
 def extracted_fidelity(file, fidelity_pattern=FIDELITY_DIR_PATTERN):
@@ -147,4 +166,11 @@ def extracted_fidelity(file, fidelity_pattern=FIDELITY_DIR_PATTERN):
 
     match = p.search(file)
 
-    return int(match.groups()[0]) if match else ''
+    if match:
+        fidelity_time = int(match.groups()[0])
+        fidelity_space = int(match.groups()[1])
+
+        return fidelity_time, fidelity_space
+
+    else:
+        return ''
