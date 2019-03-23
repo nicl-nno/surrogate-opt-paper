@@ -3,12 +3,11 @@ import os
 import pickle
 import random
 from collections import Counter
+from datetime import datetime
 
 import numpy as np
-from scipy.interpolate import interpn
-import pyKriging
 from pyKriging.krige import kriging
-from pyKriging.samplingplan import samplingplan
+from scipy.interpolate import interpn
 
 from src.basic_evolution.noisy_wind_files import (
     files_by_stations,
@@ -83,43 +82,57 @@ class FidelityFakeModel(AbstractFakeModel):
         self.stations = stations_to_out
         self.forecasts_path = forecasts_path
         self.noise_run = noise_run
+        self.sur_points = 50
 
         if 'forecasts_range' in kwargs:
             self.forecasts_range = kwargs['forecasts_range']
         else:
             self.forecasts_range = (0, 1)
 
+        if 'is_surrogate' in kwargs:
+            self.is_surrogate = kwargs['is_surrogate']
+        else:
+            self.is_surrogate = False
+
         self._init_fidelity_grids()
         self._init_grids()
 
-        k4d=[]
-        X=[]
-        for drf in self.grid_file.drf_grid:
-            for cfw in self.grid_file.cfw_grid:
-                 for stpm in self.grid_file.stpm_grid:
-                        X.append([drf,cfw,stpm])
+        if self.is_surrogate:
 
-        X=np.asarray(X)
-        self.k = []
-        #k4d=np.asarray(k4d)
-        X_train = []
-        k4d_train=[]
-        for i in range(9):
-            for k in range (150):
-                j = np.random.randint(0,980)
-                X_train.append(X[j])
-                params1 = SWANParams(X[j][0],X[j][1],X[j][2])
-                a = self.output_kriging(params1)
-                k4d_train.append(self.output_kriging(params1)[0])
-            X_train = np.asarray(X_train)
-            k4d_train = np.asarray(k4d_train)
+            k4d = []
+            X = []
+            for drf in self.grid_file.drf_grid:
+                for cfw in self.grid_file.cfw_grid:
+                    for stpm in self.grid_file.stpm_grid:
+                        X.append([drf, cfw, stpm])
 
-                #Creating kriging from kriging class
-            self.k2 = kriging(X_train, k4d_train, name='multikrieg')
-            self.k2.train(optimizer='ga')
-            self.k.append(self.k2)
+            X = np.asarray(X)
+            self.k = []
+            # k4d=np.asarray(k4d)
             X_train = []
-            k4d_train=[]
+            k4d_train = []
+            for i in range(len(self.stations)):
+                print(i)
+                for k in range(self.sur_points):
+                    j = np.random.randint(0, 980)
+                    X_train.append(X[j])
+                    params1 = SWANParams(X[j][0], X[j][1], X[j][2])
+                    # a = self.output_kriging(params1)
+                    k4d_train.append(self.output_kriging(params1)[0])
+                X_train = np.asarray(X_train)
+                k4d_train = np.asarray(k4d_train)
+
+                # Creating kriging from kriging class
+                print("kriging start")
+                print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+                self.k2 = kriging(X_train, k4d_train, name='multikrieg')
+                self.k2.train(optimizer='ga')
+                self.k.append(self.k2)
+                print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                print("kriging end")
+                X_train = []
+                k4d_train = []
 
     def _init_fidelity_grids(self):
         fid_time, fid_space = presented_fidelity(forecast_files_from_dir(self.forecasts_path))
@@ -262,11 +275,11 @@ class FidelityFakeModel(AbstractFakeModel):
 
         interp_mesh = np.array(
             np.meshgrid(params_fixed.drf, params_fixed.cfw, params_fixed.stpm, params_fixed.fid_time, params.fid_space))
-        interp_points = abs(np.rollaxis(interp_mesh, 0, 5).reshape((1, 5)))
+        interp_points = abs(np.rollaxis(interp_mesh, 0, 6).reshape((1, 5)))
 
         out = np.zeros(len(self.stations))
         for i in range(0, len(self.stations)):
-            int_obs = interpn(np.asarray(points), self.err_grid[:, :, :, :, i], interp_points, method="linear",
+            int_obs = interpn(np.asarray(points), self.err_grid[:, :, :, :, :, i], interp_points, method="linear",
                               bounds_error=False)
             out[i] = int_obs
 
@@ -274,23 +287,30 @@ class FidelityFakeModel(AbstractFakeModel):
 
     def output(self, params):
 
-        points = (
-            np.asarray(self.grid_file.drf_grid), np.asarray(self.grid_file.cfw_grid),
-            np.asarray(self.grid_file.stpm_grid),
-            np.asarray(self._fid_time_grid),
-            np.asarray(self._fid_space_grid))
-
         params_fixed = self._fixed_params(params)
 
-        interp_mesh = np.array(
-            np.meshgrid(params_fixed.drf, params_fixed.cfw, params_fixed.stpm, params_fixed.fid_time, params.fid_space))
-        interp_points = abs(np.rollaxis(interp_mesh, 0, 5).reshape((1, 5)))
+        if self.is_surrogate:
+            points = (
+                np.asarray(self.grid_file.drf_grid), np.asarray(self.grid_file.cfw_grid),
+                np.asarray(self.grid_file.stpm_grid),
+                np.asarray(self._fid_time_grid),
+                np.asarray(self._fid_space_grid))
 
-        out = np.zeros(len(self.stations))
-        for i in range(0, len(self.stations)):
-            int_obs = self.k[i].predict([params_fixed.drf,params_fixed.cfw,params_fixed.stpm])#interpn(np.asarray(points), self.err_grid[:, :, :, :, i], interp_points, method="linear",
-                       #       bounds_error=False)
-            out[i] = int_obs
+            interp_mesh = np.array(
+                np.meshgrid(params_fixed.drf, params_fixed.cfw, params_fixed.stpm, params_fixed.fid_time,
+                            params.fid_space))
+            interp_points = abs(np.rollaxis(interp_mesh, 0, 6).reshape((1, 5)))
+
+            out = np.zeros(len(self.stations))
+            for i in range(0, len(self.stations)):
+                int_obs = interpn(np.asarray(points), self.err_grid[:, :, :, :, :, i], interp_points, method="linear",
+                                  bounds_error=False)
+                out[i] = int_obs
+        else:
+            out = np.zeros(len(self.stations))
+            for i in range(0, len(self.stations)):
+                int_obs = self.k[i].predict([params_fixed.drf, params_fixed.cfw, params_fixed.stpm])
+                out[i] = int_obs
 
         return out
 

@@ -165,10 +165,10 @@ stations_for_train_set = [1, 2, 3, 4, 5, 6]
 
 
 def experiment_run(param_for_run, add_id, path_to_results):
-    iterations = 5
+    iterations = 8
     run_by = 'rmse_all'
 
-    file_name = f'bl-{run_by}-add2_{add_id}-runs.csv'
+    file_name = f'bl-{run_by}-add3_{add_id}-runs.csv'
     with open(os.path.join(path_to_results, file_name), 'w', newline='') as csvfile:
         fieldnames = ['ID', 'IterId', 'SetId', 'drf', 'cfw', 'stpm',
                       'rmse_all', 'rmse_peak', 'mae_all', 'mae_peak']
@@ -324,15 +324,32 @@ def multiple_runs():
     path_to_results = f'../../multiple_runs_{exptime}'
     os.mkdir(path_to_results)
 
-    ind = 0
-    for max_gen in range(4, 15, 1):
-        for pop_size in range(10, 20, 1):
-            meta_params = {'archive_size_rate': 0.25, 'crossover_rate': 0.7,
-                           'max_gens': max_gen, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
-                           'mutation_p3': 0.001, 'mutation_rate': 0.7, 'pop_size': pop_size}
+    #ind = 0
+    #for max_gen in range(4, 15, 1):
+    #    for pop_size in range(10, 20, 1):
+    #        meta_params = {'archive_size_rate': 0.25, 'crossover_rate': 0.7,
+    #                       'max_gens': max_gen, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
+    #                       'mutation_p3': 0.001, 'mutation_rate': 0.7, 'pop_size': pop_size}
+    #
+    #        experiment_run(meta_params, ind, path_to_results)
+    #       ind = ind + 1
 
-            experiment_run(meta_params, ind, path_to_results)
+    ind = 0
+    for max_gen in range(2, 50, 1):
+        for pop_size in range(6, 50, 2):
+            print(max_gen, pop_size)
+            objective_manual = {'a': 0, 'archive_size_rate': 0.25, 'crossover_rate': 0.7,
+                                'max_gens': max_gen, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
+                                'mutation_p3': 0.001, 'mutation_rate': 0.7, 'pop_size': pop_size}
+
+            experiment_run(objective_manual, ind, "C:\\Users\\Nikolay\\add4")
             ind = ind + 1
+
+    #objective_manual = {'a': 0, 'archive_size_rate': 0.25, 'crossover_rate': 0.7,
+     #                           'max_gens': 20, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
+    #                              'mutation_p3': 0.001, 'mutation_rate': 0.7, 'pop_size': 20}
+
+    #experiment_run(objective_manual, 1, "C:\\Users\\Nikolay\\add4")
 
 
 if __name__ == '__main__':

@@ -38,8 +38,9 @@ def model_all_stations(forecasts_range=(0, 1)):
         [obs.time_series() for obs in
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=ALL_STATIONS)]
 
+    print("ffm")
     model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS, error=error_rmse_all,
-                              forecasts_path='../2fidelity/*', forecasts_range=forecasts_range)
+                              forecasts_path='../../../2fidelity/*', forecasts_range=forecasts_range, is_surrogate=False)
 
     return model
 
@@ -72,7 +73,7 @@ def optimize_test(train_stations, max_gens, pop_size, archive_size, crossover_ra
 
     error = error_rmse_all
     train_model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=train_stations, error=error,
-                                    forecasts_path='../2fidelity/*', forecasts_range=train_range)
+                                    forecasts_path='../../../2fidelity/*', forecasts_range=train_range, is_surrogate=True)
 
     history, archive_history = SPEA2(
         params=SPEA2.Params(max_gens, pop_size=pop_size, archive_size=archive_size,
@@ -111,6 +112,6 @@ def optimize_test(train_stations, max_gens, pop_size, archive_size, crossover_ra
 
 
 if __name__ == '__main__':
-    optimize_test(train_stations=[1, 2, 3], max_gens=50, pop_size=10, archive_size=5,
+    optimize_test(train_stations=[1, 2, 3,4,5,6,7,8,9], max_gens=30, pop_size=30, archive_size=10,
                   crossover_rate=0.7, mutation_rate=0.7, mutation_value_rate=[0.1, 0.01, 0.001])
 
