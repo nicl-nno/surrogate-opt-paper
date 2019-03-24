@@ -41,6 +41,15 @@ class SPEA2:
             self.mutation_rate = mutation_rate
             self.mutation_value_rate = mutation_value_rate
 
+            self.initial_fid_time = 180
+            self.initial_fid_spatial = 56
+
+            self.fid_time_delta = 0
+            self.fid_spatial_delta = 0
+
+            self.refinement_radius = 0
+            self.refinement_radius_delta = 0
+
     class Individ:
         def __init__(self, genotype):
             self.objectives = ()
