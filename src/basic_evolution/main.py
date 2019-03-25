@@ -55,14 +55,14 @@ def get_rmse_for_all_stations(forecasts, observations):
     return results_for_stations
 
 
-def model_all_stations():
+def model_all_stations(forecasts_range=(0, 1)):
     grid = CSVGridFile('../../samples/wind-exp-params-new.csv')
     ww3_obs = \
         [obs.time_series() for obs in
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=ALL_STATIONS)]
 
     model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=ALL_STATIONS, error=error_rmse_all,
-                              forecasts_path='../../../wind-fidelity/*')
+                              forecasts_path='../../../2fidelity/*', forecasts_range=forecasts_range)
 
     return model
 
@@ -100,7 +100,12 @@ def save_archive_history(history, file_name='history.csv'):
                 row_to_write['idx'] = idx
                 row_to_write['gen_idx'] = gen_idx
 
-                metrics = test_model.output(params=ind.genotype)
+                params = test_model.closest_params(ind.genotype)
+                closest_params = SWANParams(drf=params[0], cfw=params[1], stpm=params[2],
+                                            fidelity_time=params[3], fidelity_space=params[4])
+
+                # TODO: bug here
+                metrics = test_model.output(params=closest_params)
                 for err_idx, err_value in enumerate(metrics):
                     row_to_write[f'err_{err_idx + 1}'] = err_value
 
@@ -120,7 +125,8 @@ def run_genetic_opt(max_gens, pop_size, archive_size, crossover_rate, mutation_r
     train_model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=stations,
                                     error=error_rmse_all,
                                     forecasts_path='../../../wind-fidelity/*')
-    test_model = model_all_stations()
+    test_range = (0, 1)
+    test_model = model_all_stations(forecasts_range=test_range)
 
     history, archive_history = SPEA2(
         params=SPEA2.Params(max_gens=max_gens, pop_size=pop_size, archive_size=archive_size,
@@ -132,27 +138,25 @@ def run_genetic_opt(max_gens, pop_size, archive_size, crossover_rate, mutation_r
         mutation=mutation).solution(verbose=False)
 
     exptime2 = str(datetime.datetime.now().time()).replace(":", "-")
-    save_archive_history(archive_history, f'rob-exp-bl-{exptime2}.csv')
+    # save_archive_history(archive_history, f'rob-exp-bl-{exptime2}.csv')
 
     params = history.last().genotype
 
-    forecasts = []
-
     if 'save_figures' in kwargs and kwargs['save_figures'] is True:
-        closest_hist = test_model.closest_params(params)
-        closest_params_set_hist = SWANParams(drf=closest_hist[0], cfw=closest_hist[1], stpm=closest_hist[2])
+        params = test_model.closest_params(params)
+        closest_params = SWANParams(drf=params[0], cfw=params[1], stpm=params[2],
+                                    fidelity_time=params[3], fidelity_space=params[4])
 
-        for row in grid.rows:
-            if set(row.model_params.params_list()) == set(closest_params_set_hist.params_list()):
-                drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx = test_model.params_idxs(row.model_params)
-                forecasts = test_model.grid[drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx]
-                break
+        drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx = test_model.params_idxs(closest_params)
+
+        forecasts = test_model.grid[drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx]
 
         plot_results(forecasts=forecasts,
                      observations=wave_watch_results(path_to_results='../../samples/ww-res/',
                                                      stations=ALL_STATIONS),
                      baseline=default_params_forecasts(test_model),
-                     save=True, file_path=kwargs['figure_path'])
+                     save=True, file_path=kwargs['figure_path'],
+                     values_range=test_range)
 
     return history.last()
 
@@ -279,8 +283,10 @@ def optimize_by_ww3_obs(train_stations, max_gens, pop_size, archive_size, crosso
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=train_stations)]
 
     error = error_rmse_all
+    test_range = (0, 1)
+
     train_model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=train_stations, error=error,
-                                    forecasts_path='../../../wind-fidelity/*')
+                                    forecasts_path='../../../2fidelity/*')
 
     history, archive_history = SPEA2(
         params=SPEA2.Params(max_gens, pop_size=pop_size, archive_size=archive_size,
@@ -292,28 +298,22 @@ def optimize_by_ww3_obs(train_stations, max_gens, pop_size, archive_size, crosso
         mutation=mutation).solution(verbose=True)
 
     params = history.last().genotype
-    save_archive_history(archive_history, f'history-{iter_ind}.csv')
+    # save_archive_history(archive_history, f'history-{iter_ind}.csv')
 
     if plot_figures:
-        test_model = model_all_stations()
+        test_model = model_all_stations(forecasts_range=test_range)
+        params = test_model.closest_params(params)
+        closest_params = SWANParams(drf=params[0], cfw=params[1], stpm=params[2],
+                                    fidelity_time=params[3], fidelity_space=params[4])
 
-        closest_hist = test_model.closest_params(params)
-        closest_params_set_hist = SWANParams(drf=closest_hist[0], cfw=closest_hist[1], stpm=closest_hist[2])
+        drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx = test_model.params_idxs(closest_params)
 
-        forecasts = []
-        for row in grid.rows:
-
-            if set(row.model_params.params_list()) == set(closest_params_set_hist.params_list()):
-                drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx = test_model.params_idxs(row.model_params)
-                forecasts = test_model.grid[drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx]
-                if grid.rows.index(row) < 100:
-                    print("!!!")
-                print("index : %d" % grid.rows.index(row))
-                break
+        forecasts = test_model.grid[drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx]
 
         plot_results(forecasts=forecasts,
                      observations=wave_watch_results(path_to_results='../../samples/ww-res/', stations=ALL_STATIONS),
-                     baseline=default_params_forecasts(test_model))
+                     baseline=default_params_forecasts(test_model),
+                     values_range=test_range)
         plot_population_movement(archive_history, grid)
 
     return history

@@ -4,16 +4,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 
+from src.utils.files import observations_from_range
+
 
 def plot_results(forecasts, observations, **kwargs):
-    # assert len(observations) == len(forecasts) == 3
-
     fig, axs = plt.subplots(3, 3)
-    time = np.linspace(1, 253, num=len(forecasts[0].hsig_series))
+    time = np.linspace(1, len(forecasts[0].hsig_series), num=len(forecasts[0].hsig_series))
 
     obs_series = []
     for obs in observations:
-        obs_series.append(obs.time_series(from_date="20140814.120000", to_date="20140915.000000")[:len(time)])
+
+        if 'values_range' in kwargs:
+            obs_in_range = observations_from_range(
+                obs.time_series(from_date="20140814.120000", to_date="20140915.000000"), kwargs['values_range'])
+            obs_series.append(obs_in_range[:len(time)])
+        else:
+            obs_series.append(obs.time_series(from_date="20140814.120000", to_date="20140915.000000")[:len(time)])
     for idx in range(min(len(forecasts), len(observations))):
         i, j = divmod(idx, 3)
         station_idx = observations[idx].station_idx
