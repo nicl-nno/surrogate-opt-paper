@@ -2,6 +2,7 @@ import csv
 import os
 import pickle
 import random
+import sys
 from collections import Counter
 from datetime import datetime
 
@@ -82,7 +83,6 @@ class FidelityFakeModel(AbstractFakeModel):
         self.stations = stations_to_out
         self.forecasts_path = forecasts_path
         self.noise_run = noise_run
-        self.sur_points = 50
 
         if 'forecasts_range' in kwargs:
             self.forecasts_range = kwargs['forecasts_range']
@@ -93,6 +93,11 @@ class FidelityFakeModel(AbstractFakeModel):
             self.is_surrogate = kwargs['is_surrogate']
         else:
             self.is_surrogate = False
+
+        if 'sur_points' in kwargs:
+            self.sur_points = kwargs['sur_points']
+        else:
+            self.sur_points = 150
 
         self._init_fidelity_grids()
         self._init_grids()
@@ -143,6 +148,8 @@ class FidelityFakeModel(AbstractFakeModel):
         self.grid = self._empty_grid()
 
         files = forecast_files_from_dir(self.forecasts_path)
+
+        if not files: sys.exit("EMPTY FORECAST")
 
         stations = files_by_stations(files, noise_run=self.noise_run, stations=[str(st) for st in self.stations])
 
@@ -289,7 +296,7 @@ class FidelityFakeModel(AbstractFakeModel):
 
         params_fixed = self._fixed_params(params)
 
-        if self.is_surrogate:
+        if not self.is_surrogate:
             points = (
                 np.asarray(self.grid_file.drf_grid), np.asarray(self.grid_file.cfw_grid),
                 np.asarray(self.grid_file.stpm_grid),
