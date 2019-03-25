@@ -87,29 +87,23 @@ def optimize_test(train_stations, max_gens, pop_size, archive_size, crossover_ra
 
     if plot_figures:
         test_model = model_all_stations(forecasts_range=test_range)
+        params = test_model.closest_params(params)
+        closest_params = SWANParams(drf=params[0], cfw=params[1], stpm=params[2],
+                                    fidelity_time=params[3], fidelity_space=params[4])
 
-        closest_hist = test_model.closest_params(params)
-        closest_params_set_hist = SWANParams(drf=closest_hist[0], cfw=closest_hist[1], stpm=closest_hist[2])
+        drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx = test_model.params_idxs(closest_params)
 
-        forecasts = []
-        for row in grid.rows:
-
-            if set(row.model_params.params_list()) == set(closest_params_set_hist.params_list()):
-                drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx = test_model.params_idxs(row.model_params)
-                forecasts = test_model.grid[drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx]
-                if grid.rows.index(row) < 100:
-                    print("!!!")
-                print("index : %d" % grid.rows.index(row))
-                break
+        forecasts = test_model.grid[drf_idx, cfw_idx, stpm_idx, fid_time_idx, fid_space_idx]
 
         plot_results(forecasts=forecasts,
                      observations=wave_watch_results(path_to_results='../../samples/ww-res/', stations=ALL_STATIONS),
-                     baseline=default_params_forecasts(test_model))
+                     baseline=default_params_forecasts(test_model),
+                     values_range=test_range)
         plot_population_movement(archive_history, grid)
 
     return history
 
 
 if __name__ == '__main__':
-    optimize_test(train_stations=[1, 2, 3], max_gens=50, pop_size=10, archive_size=5,
+    optimize_test(train_stations=[1, 2, 3], max_gens=10, pop_size=10, archive_size=5,
                   crossover_rate=0.7, mutation_rate=0.7, mutation_value_rate=[0.1, 0.01, 0.001])

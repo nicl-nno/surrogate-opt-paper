@@ -138,7 +138,7 @@ class FidelityFakeModel(AbstractFakeModel):
 
         # calc fitness for every point
         st_set_id = ("-".join(str(self.stations)))
-        file_path = f'grid-saved-{self.error.__name__}_{self.noise_run}_st{st_set_id}.pik'
+        file_path = f'grid-saved-{self.error.__name__}_range_{self.forecasts_range}_st{st_set_id}.pik'
 
         grid_file_path = os.path.join(GRID_PATH, file_path)
 
