@@ -41,6 +41,7 @@ class SPEA2:
             self.mutation_rate = mutation_rate
             self.mutation_value_rate = mutation_value_rate
 
+            # TODO: these params should not be here
             self.initial_fid_time = 180
             self.initial_fid_spatial = 56
 

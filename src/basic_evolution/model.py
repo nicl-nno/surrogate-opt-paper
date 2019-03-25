@@ -98,41 +98,41 @@ class FidelityFakeModel(AbstractFakeModel):
         self._init_grids()
 
         if self.is_surrogate:
+            self._init_surrogate()
 
-            k4d = []
-            X = []
-            for drf in self.grid_file.drf_grid:
-                for cfw in self.grid_file.cfw_grid:
-                    for stpm in self.grid_file.stpm_grid:
-                        X.append([drf, cfw, stpm])
+    # TODO: extract class instead of a function
+    def _init_surrogate(self):
+        X = []
+        for drf in self.grid_file.drf_grid:
+            for cfw in self.grid_file.cfw_grid:
+                for stpm in self.grid_file.stpm_grid:
+                    X.append([drf, cfw, stpm])
 
-            X = np.asarray(X)
-            self.k = []
-            # k4d=np.asarray(k4d)
+        X = np.asarray(X)
+        self.k = []
+        X_train = []
+        k4d_train = []
+        for i in range(len(self.stations)):
+            print(i)
+            for k in range(self.sur_points):
+                j = np.random.randint(0, 980)
+                X_train.append(X[j])
+                params1 = SWANParams(X[j][0], X[j][1], X[j][2])
+                k4d_train.append(self.output_kriging(params1)[0])
+            X_train = np.asarray(X_train)
+            k4d_train = np.asarray(k4d_train)
+
+            # Creating kriging from kriging class
+            print("kriging start")
+            print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+            self.k2 = kriging(X_train, k4d_train, name='multikrieg')
+            self.k2.train(optimizer='ga')
+            self.k.append(self.k2)
+            print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            print("kriging end")
             X_train = []
             k4d_train = []
-            for i in range(len(self.stations)):
-                print(i)
-                for k in range(self.sur_points):
-                    j = np.random.randint(0, 980)
-                    X_train.append(X[j])
-                    params1 = SWANParams(X[j][0], X[j][1], X[j][2])
-                    # a = self.output_kriging(params1)
-                    k4d_train.append(self.output_kriging(params1)[0])
-                X_train = np.asarray(X_train)
-                k4d_train = np.asarray(k4d_train)
-
-                # Creating kriging from kriging class
-                print("kriging start")
-                print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-
-                self.k2 = kriging(X_train, k4d_train, name='multikrieg')
-                self.k2.train(optimizer='ga')
-                self.k.append(self.k2)
-                print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-                print("kriging end")
-                X_train = []
-                k4d_train = []
 
     def _init_fidelity_grids(self):
         fid_time, fid_space = presented_fidelity(forecast_files_from_dir(self.forecasts_path))
