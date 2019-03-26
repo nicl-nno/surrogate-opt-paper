@@ -2,6 +2,7 @@ import csv
 import os
 import pickle
 import random
+import sys
 from collections import Counter
 from datetime import datetime
 
@@ -27,7 +28,8 @@ drf_range = [0.2, 0.4, 0.6000000000000001, 0.8, 1.0, 1.2, 1.4, 1.599999999999999
 cfw_range = [0.005, 0.01, 0.015, 0.02, 0.025, 0.030000000000000002, 0.035, 0.04, 0.045, 0.049999999999999996]
 stpm_range = [0.001, 0.0025, 0.004, 0.0055, 0.006999999999999999, 0.008499999999999999, 0.009999999999999998]
 
-GRID_PATH = '../../grid'
+GRID_PATH = 'grid'
+KRIGING_PATH = 'kriging'
 
 
 class SWANParams:
@@ -82,7 +84,6 @@ class FidelityFakeModel(AbstractFakeModel):
         self.stations = stations_to_out
         self.forecasts_path = forecasts_path
         self.noise_run = noise_run
-        self.sur_points = 50
 
         if 'forecasts_range' in kwargs:
             self.forecasts_range = kwargs['forecasts_range']
@@ -94,6 +95,11 @@ class FidelityFakeModel(AbstractFakeModel):
         else:
             self.is_surrogate = False
 
+        if 'sur_points' in kwargs:
+            self.sur_points = kwargs['sur_points']
+        else:
+            self.sur_points = 150
+
         self._init_fidelity_grids()
         self._init_grids()
 
@@ -101,27 +107,34 @@ class FidelityFakeModel(AbstractFakeModel):
             self._init_surrogate()
 
     # TODO: extract class instead of a function
-    def _init_surrogate(self):
-        X = []
-        for drf in self.grid_file.drf_grid:
-            for cfw in self.grid_file.cfw_grid:
-                for stpm in self.grid_file.stpm_grid:
-                    X.append([drf, cfw, stpm])
 
-        X = np.asarray(X)
-        self.k = []
-        X_train = []
-        k4d_train = []
-        for i in range(len(self.stations)):
-            print(i)
-            for k in range(self.sur_points):
-                j = np.random.randint(0, 980)
-                X_train.append(X[j])
-                params1 = SWANParams(X[j][0], X[j][1], X[j][2])
-                k4d_train.append(self.output_kriging(params1)[0])
+    def _init_surrogate(self):
+         # calc fitness for every point
+        st_set_id = ("-".join(str(self.stations)))
+        file_path = f'kriging-saved-{self.sur_points}_fidelity_{self._fid_time_grid}_st{st_set_id}.pik'
+
+        kriging_file_path = os.path.join(KRIGING_PATH, file_path)
+
+        if not os.path.isfile(kriging_file_path):
+            X = []
+            for drf in self.grid_file.drf_grid:
+                for cfw in self.grid_file.cfw_grid:
+                    for stpm in self.grid_file.stpm_grid:
+                        X.append([drf, cfw, stpm])
+
+            X = np.asarray(X)
+            self.k = []
+            X_train = []
+            k4d_train = []
+            for i in range(len(self.stations)):
+                print(i)
+                for k in range(self.sur_points):
+                    j = np.random.randint(0, 980)
+                    X_train.append(X[j])
+                    params1 = SWANParams(X[j][0], X[j][1], X[j][2])
+                    k4d_train.append(self.output_kriging(params1)[0])
             X_train = np.asarray(X_train)
             k4d_train = np.asarray(k4d_train)
-
             # Creating kriging from kriging class
             print("kriging start")
             print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
@@ -131,8 +144,17 @@ class FidelityFakeModel(AbstractFakeModel):
             self.k.append(self.k2)
             print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
             print("kriging end")
+            pickle_out = open(kriging_file_path, 'wb')
+            pickle.dump(self.k2, pickle_out)
+            pickle_out.close()
+            print(f"KRIGING MODEL SAVED, file_name: {kriging_file_path}")
             X_train = []
-            k4d_train = []
+            k4d_train = []       
+        else:
+            with open(kriging_file_path, 'rb') as f:
+                self.k2 = pickle.load(f)
+                self.k.append(self.k2)
+        
 
     def _init_fidelity_grids(self):
         fid_time, fid_space = presented_fidelity(forecast_files_from_dir(self.forecasts_path))
@@ -143,6 +165,8 @@ class FidelityFakeModel(AbstractFakeModel):
         self.grid = self._empty_grid()
 
         files = forecast_files_from_dir(self.forecasts_path)
+
+        if not files: sys.exit("EMPTY FORECAST")
 
         stations = files_by_stations(files, noise_run=self.noise_run, stations=[str(st) for st in self.stations])
 
@@ -289,7 +313,7 @@ class FidelityFakeModel(AbstractFakeModel):
 
         params_fixed = self._fixed_params(params)
 
-        if self.is_surrogate:
+        if not self.is_surrogate:
             points = (
                 np.asarray(self.grid_file.drf_grid), np.asarray(self.grid_file.cfw_grid),
                 np.asarray(self.grid_file.stpm_grid),
