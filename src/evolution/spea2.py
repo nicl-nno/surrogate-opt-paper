@@ -9,7 +9,7 @@ from src.evolution.raw_fitness import raw_fitness
 
 
 class SPEA2:
-    def __init__(self, params, init_population, objectives, crossover, mutation):
+    def __init__(self, params, objectives, evolutionary_operators):
         '''
          Strength Pareto Evolutionary Algorithm
         :param params: Meta-parameters of the SPEA2
@@ -18,16 +18,21 @@ class SPEA2:
         :param crossover: function to crossover two genotypes
         :param mutation: function to mutate genotype
         '''
+
         self.params = params
 
-        self.init_population = init_population
         self.objectives = objectives
-        self.crossover = crossover
-        self.mutation = mutation
+        self.operators = evolutionary_operators
 
-        self._init_populations()
+        self.__init_operators()
+        self.__init_populations()
 
-    def _init_populations(self):
+    def __init_operators(self):
+        self.init_population = self.operators.init_population
+        self.crossover = self.operators.crossover
+        self.mutation = self.operators.mutation
+
+    def __init_populations(self):
         gens = self.init_population(self.params.pop_size)
         self._pop = [SPEA2.Individ(genotype=gen) for gen in gens]
         self._archive = []

@@ -16,16 +16,14 @@ from src.basic_evolution.errors import (
     error_rmse_peak
 )
 from src.basic_evolution.evo_operators import (
-    calculate_objectives_interp,
-    crossover,
-    mutation,
-    initial_pop_lhs
+    calculate_objectives_interp
 )
 from src.basic_evolution.model import (
     CSVGridFile,
     FidelityFakeModel
 )
 from src.basic_evolution.model import SWANParams
+from src.evolution.operators import default_operators
 from src.evolution.spea2 import SPEA2
 from src.utils.files import (
     wave_watch_results
@@ -128,14 +126,13 @@ def run_genetic_opt(max_gens, pop_size, archive_size, crossover_rate, mutation_r
     test_range = (0, 1)
     test_model = model_all_stations(forecasts_range=test_range)
 
+    operators = default_operators()
     history, archive_history = SPEA2(
         params=SPEA2.Params(max_gens=max_gens, pop_size=pop_size, archive_size=archive_size,
                             crossover_rate=crossover_rate, mutation_rate=mutation_rate,
                             mutation_value_rate=mutation_value_rate),
-        init_population=initial_pop_lhs,
         objectives=partial(calculate_objectives_interp, train_model),
-        crossover=crossover,
-        mutation=mutation).solution(verbose=False)
+        evolutionary_operators=operators).solution(verbose=False)
 
     exptime2 = str(datetime.datetime.now().time()).replace(":", "-")
     # save_archive_history(archive_history, f'rob-exp-bl-{exptime2}.csv')
@@ -288,14 +285,14 @@ def optimize_by_ww3_obs(train_stations, max_gens, pop_size, archive_size, crosso
     train_model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=train_stations, error=error,
                                     forecasts_path='../../../2fidelity/*')
 
+    operators = default_operators()
+
     history, archive_history = SPEA2(
         params=SPEA2.Params(max_gens, pop_size=pop_size, archive_size=archive_size,
                             crossover_rate=crossover_rate, mutation_rate=mutation_rate,
                             mutation_value_rate=mutation_value_rate),
-        init_population=initial_pop_lhs,
         objectives=partial(calculate_objectives_interp, train_model),
-        crossover=crossover,
-        mutation=mutation).solution(verbose=True)
+        evolutionary_operators=operators).solution(verbose=True)
 
     params = history.last().genotype
     # save_archive_history(archive_history, f'history-{iter_ind}.csv')
@@ -324,8 +321,8 @@ def multiple_runs():
     path_to_results = f'../../multiple_runs_{exptime}'
     os.mkdir(path_to_results)
 
-    #ind = 0
-    #for max_gen in range(4, 15, 1):
+    # ind = 0
+    # for max_gen in range(4, 15, 1):
     #    for pop_size in range(10, 20, 1):
     #        meta_params = {'archive_size_rate': 0.25, 'crossover_rate': 0.7,
     #                       'max_gens': max_gen, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
@@ -345,11 +342,11 @@ def multiple_runs():
             experiment_run(objective_manual, ind, "C:\\Users\\Nikolay\\add4")
             ind = ind + 1
 
-    #objective_manual = {'a': 0, 'archive_size_rate': 0.25, 'crossover_rate': 0.7,
-     #                           'max_gens': 20, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
+    # objective_manual = {'a': 0, 'archive_size_rate': 0.25, 'crossover_rate': 0.7,
+    #                           'max_gens': 20, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
     #                              'mutation_p3': 0.001, 'mutation_rate': 0.7, 'pop_size': 20}
 
-    #experiment_run(objective_manual, 1, "C:\\Users\\Nikolay\\add4")
+    # experiment_run(objective_manual, 1, "C:\\Users\\Nikolay\\add4")
 
 
 if __name__ == '__main__':
