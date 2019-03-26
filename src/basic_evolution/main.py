@@ -161,7 +161,7 @@ def run_genetic_opt(max_gens, pop_size, archive_size, crossover_rate, mutation_r
     return history.last()
 
 
-stations_for_train_set = [1, 2, 3, 4, 5, 6]
+stations_for_train_set = [1]
 
 
 def experiment_run(param_for_run, add_id, path_to_results):

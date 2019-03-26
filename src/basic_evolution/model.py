@@ -6,6 +6,9 @@ import sys
 from collections import Counter
 from datetime import datetime
 
+from pyDOE import lhs
+from scipy.stats.distributions import norm
+
 import numpy as np
 from pyKriging.krige import kriging
 from scipy.interpolate import interpn
@@ -97,7 +100,7 @@ class FidelityFakeModel(AbstractFakeModel):
         if 'sur_points' in kwargs:
             self.sur_points = kwargs['sur_points']
         else:
-            self.sur_points = 150
+            self.sur_points = 50
 
         self._init_fidelity_grids()
         self._init_grids()
@@ -108,24 +111,28 @@ class FidelityFakeModel(AbstractFakeModel):
     # TODO: extract class instead of a function
     def _init_surrogate(self):
         X = []
-        for drf in self.grid_file.drf_grid:
-            for cfw in self.grid_file.cfw_grid:
-                for stpm in self.grid_file.stpm_grid:
-                    X.append([drf, cfw, stpm])
+        #for drf in self.grid_file.drf_grid:
+        #    for cfw in self.grid_file.cfw_grid:
+        #        for stpm in self.grid_file.stpm_grid:
+        #            X.append([drf, cfw, stpm])
 
-        X = np.asarray(X)
+        #X = np.asarray(X)
         self.k = []
-        X_train = []
-        k4d_train = []
+
+        dim_num=3
+        samples_grid = lhs(dim_num, self.sur_points, 'center')
+
+        for idx, params_range in enumerate([drf_range, cfw_range, stpm_range]):
+            samples_grid[:, idx] = norm(loc=np.mean(params_range), scale=np.std(params_range)).ppf(samples_grid[:, idx])
+
+        points_for_krig = [SWANParams(drf=sample[0], cfw=sample[1], stpm=sample[2]) for sample in samples_grid]
+        X_train = [[sample[0],sample[1],sample[2]] for sample in samples_grid]
+        X_train = np.asarray(X_train)
+
         for i in range(len(self.stations)):
             print(i)
-            for k in range(self.sur_points):
-                j = np.random.randint(0, 980)
-                X_train.append(X[j])
-                params1 = SWANParams(X[j][0], X[j][1], X[j][2])
-                k4d_train.append(self.output_kriging(params1)[0])
-            X_train = np.asarray(X_train)
-            k4d_train = np.asarray(k4d_train)
+            k4d_train = [self.output_kriging(points_for_krig[k])[0] for k in range(self.sur_points)]
+           # k4d_train = np.asarray(k4d_train)
 
             # Creating kriging from kriging class
             print("kriging start")
@@ -136,8 +143,6 @@ class FidelityFakeModel(AbstractFakeModel):
             self.k.append(self.k2)
             print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
             print("kriging end")
-            X_train = []
-            k4d_train = []
 
     def _init_fidelity_grids(self):
         fid_time, fid_space = presented_fidelity(forecast_files_from_dir(self.forecasts_path))
