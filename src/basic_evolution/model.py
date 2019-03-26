@@ -30,17 +30,20 @@ drf_range = [0.2, 0.4, 0.6000000000000001, 0.8, 1.0, 1.2, 1.4, 1.599999999999999
 
 cfw_range = [0.005, 0.01, 0.015, 0.02, 0.025, 0.030000000000000002, 0.035, 0.04, 0.045, 0.049999999999999996]
 stpm_range = [0.001, 0.0025, 0.004, 0.0055, 0.006999999999999999, 0.008499999999999999, 0.009999999999999998]
+fid_time_range = [60, 90, 120, 180]
+fid_space_range = [14,28,56]
 
-GRID_PATH = '../../grid'
+
+GRID_PATH = '../../grid-new'
 
 
 class SWANParams:
 
     @staticmethod
     def new_instance():
-        return SWANParams(drf=random.choice(drf_range), cfw=random.choice(cfw_range), stpm=random.choice(stpm_range))
+        return SWANParams(drf=random.choice(drf_range), cfw=random.choice(cfw_range), stpm=random.choice(stpm_range),fid_time=random.choice(fid_time_range),fid_space=random.choice(fid_space_range))
 
-    def __init__(self, drf, cfw, stpm, fidelity_time=60, fidelity_space=14):
+    def __init__(self, drf, cfw, stpm, fidelity_time, fidelity_space):
         self.drf = drf
         self.cfw = cfw
         self.stpm = stpm
@@ -119,26 +122,26 @@ class FidelityFakeModel(AbstractFakeModel):
         #X = np.asarray(X)
         self.k = []
 
-        dim_num=3
+        dim_num=5
         samples_grid = lhs(dim_num, self.sur_points, 'center')
 
-        for idx, params_range in enumerate([drf_range, cfw_range, stpm_range]):
+        for idx, params_range in enumerate([drf_range, cfw_range, stpm_range, fid_time_range, fid_space_range]):
             samples_grid[:, idx] = norm(loc=np.mean(params_range), scale=np.std(params_range)).ppf(samples_grid[:, idx])
 
-        points_for_krig = [SWANParams(drf=sample[0], cfw=sample[1], stpm=sample[2]) for sample in samples_grid]
-        X_train = [[sample[0],sample[1],sample[2]] for sample in samples_grid]
+        points_for_krig = [SWANParams(drf=sample[0], cfw=sample[1], stpm=sample[2], fidelity_time=sample[3], fidelity_space=sample[4]) for sample in samples_grid]
+        X_train = [[sample[0],sample[1],sample[2],sample[3],sample[4]] for sample in samples_grid]
         X_train = np.asarray(X_train)
 
         for i in range(len(self.stations)):
             print(i)
-            k4d_train = [self.output_kriging(points_for_krig[k])[0] for k in range(self.sur_points)]
-           # k4d_train = np.asarray(k4d_train)
+            k6d_train = [self.output_kriging(points_for_krig[k])[0] for k in range(self.sur_points)]
+           # k6d_train = np.asarray(k6d_train)
 
             # Creating kriging from kriging class
             print("kriging start")
             print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
-            self.k2 = kriging(X_train, k4d_train, name='multikrieg')
+            self.k2 = kriging(X_train, k6d_train, name='multikrieg')
             self.k2.train(optimizer='ga')
             self.k.append(self.k2)
             print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
@@ -321,7 +324,7 @@ class FidelityFakeModel(AbstractFakeModel):
         else:
             out = np.zeros(len(self.stations))
             for i in range(0, len(self.stations)):
-                int_obs = self.k[i].predict([params_fixed.drf, params_fixed.cfw, params_fixed.stpm])
+                int_obs = self.k[i].predict([params_fixed.drf, params_fixed.cfw, params_fixed.stpm,params_fixed.fid_time,params_fixed.fid_space])
                 out[i] = int_obs
 
         return out
@@ -331,8 +334,12 @@ class FidelityFakeModel(AbstractFakeModel):
                                   cfw=min(max(params.cfw, min(self.grid_file.cfw_grid)), max(self.grid_file.cfw_grid)),
                                   stpm=min(max(params.stpm, min(self.grid_file.stpm_grid)),
                                            max(self.grid_file.stpm_grid)),
-                                  fidelity_time=params.fid_time,
-                                  fidelity_space=params.fid_space)
+                                  fidelity_time=min(max(params.fid_time, min(fid_time_range)),
+                                           max(fid_time_range)),
+                                  fidelity_space=min(max(params.fid_space, min(fid_time_range)),
+                                                    max(fid_time_range)))
+
+
         return params_fixed
 
     def output_no_int(self, params):
@@ -401,7 +408,7 @@ class CSVGridRow:
 
     @classmethod
     def _swan_params(cls, csv_row):
-        return SWANParams(drf=float(csv_row['DRF']), cfw=float(csv_row['CFW']), stpm=float(csv_row['STPM']))
+        return SWANParams(drf=float(csv_row['DRF']), cfw=float(csv_row['CFW']), stpm=float(csv_row['STPM']),fidelity_time=180, fidelity_space=14)
 
 
 def unique_values(values):

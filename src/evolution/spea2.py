@@ -241,6 +241,10 @@ def print_new_best_individ(best, gen_index):
     print("new best: ", round(best.fitness(), 5), round(best.genotype.drf, 2),
           round(best.genotype.cfw, 6),
           round(best.genotype.stpm, 6),
+          round(best.genotype.fid_time),
+          round(best.genotype.fid_space),
+          round(best.genotype.stpm, 6),
+
           round(rmse(best), 4),
           mean_obj(best))
     print(gen_index)

@@ -107,5 +107,5 @@ def optimize_test(train_stations, max_gens, pop_size, archive_size, crossover_ra
 
 
 if __name__ == '__main__':
-    optimize_test(train_stations=[1, 2, 3], max_gens=30, pop_size=30, archive_size=10,
+    optimize_test(train_stations=[1], max_gens=30, pop_size=30, archive_size=10,
                   crossover_rate=0.7, mutation_rate=0.7, mutation_value_rate=[0.1, 0.01, 0.001])
