@@ -3,6 +3,7 @@ from datetime import datetime
 
 import numpy as np
 
+from src.evolution.operators import EvoOperators
 from src.evolution.spea2 import SPEA2
 
 
@@ -51,14 +52,13 @@ def print_best_rosenbrook(best, gen_index):
 
 
 def rosenbrook_optimize_test():
+    operators = EvoOperators(init_population=initial_pop_rosenbrook, crossover=crossover, mutation=mutation)
     history, _ = SPEA2(
         params=SPEA2.Params(max_gens=500, pop_size=10, archive_size=5,
                             crossover_rate=0.7, mutation_rate=0.7,
                             mutation_value_rate=[0.05, 0.05]),
-        init_population=initial_pop_rosenbrook,
         objectives=calculate_objectives_rosenbrock,
-        crossover=crossover,
-        mutation=mutation).solution(verbose=True, print_fun=print_best_rosenbrook)
+        evolutionary_operators=operators).solution(verbose=True, print_fun=print_best_rosenbrook)
 
 
 if __name__ == '__main__':

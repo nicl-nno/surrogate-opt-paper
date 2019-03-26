@@ -7,16 +7,14 @@ from src.basic_evolution.errors import (
     error_rmse_all
 )
 from src.basic_evolution.evo_operators import (
-    calculate_objectives_interp,
-    crossover,
-    mutation,
-    initial_pop_lhs
+    calculate_objectives_interp
 )
 from src.basic_evolution.model import (
     CSVGridFile,
     FidelityFakeModel
 )
 from src.basic_evolution.model import SWANParams
+from src.evolution.operators import default_operators
 from src.evolution.spea2 import SPEA2
 from src.utils.files import (
     wave_watch_results
@@ -77,14 +75,14 @@ def optimize_test(train_stations, max_gens, pop_size, archive_size, crossover_ra
                                     forecasts_path='../../../2fidelity/*', forecasts_range=train_range,
                                     is_surrogate=True, sur_points=100)
 
+    operators = default_operators()
+
     history, archive_history = SPEA2(
         params=SPEA2.Params(max_gens, pop_size=pop_size, archive_size=archive_size,
                             crossover_rate=crossover_rate, mutation_rate=mutation_rate,
                             mutation_value_rate=mutation_value_rate),
-        init_population=initial_pop_lhs,
         objectives=partial(calculate_objectives_interp, train_model),
-        crossover=crossover,
-        mutation=mutation).solution(verbose=True)
+        evolutionary_operators=operators).solution(verbose=True)
 
     params = history.last().genotype
 
