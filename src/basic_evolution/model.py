@@ -131,7 +131,7 @@ class FidelityFakeModel(AbstractFakeModel):
 
         for i in range(len(self.stations)):
             print(i)
-            k4d_train = [self.output_kriging(points_for_krig[k])[0] for k in range(self.sur_points)]
+            k4d_train = [self.output_kriging(points_for_krig[k],i)[0] for k in range(self.sur_points)]
            # k4d_train = np.asarray(k4d_train)
 
             # Creating kriging from kriging class
@@ -275,7 +275,7 @@ class FidelityFakeModel(AbstractFakeModel):
 
         return drf, cfw, stpm, fid_time, fid_space
 
-    def output_kriging(self, params):
+    def output_kriging(self, params, point_id):
 
         points = (
             np.asarray(self.grid_file.drf_grid), np.asarray(self.grid_file.cfw_grid),
@@ -290,10 +290,10 @@ class FidelityFakeModel(AbstractFakeModel):
         interp_points = abs(np.rollaxis(interp_mesh, 0, 6).reshape((1, 5)))
 
         out = np.zeros(len(self.stations))
-        for i in range(0, len(self.stations)):
-            int_obs = interpn(np.asarray(points), self.err_grid[:, :, :, :, :, i], interp_points, method="linear",
-                              bounds_error=False)
-            out[i] = int_obs
+
+        int_obs = interpn(np.asarray(points), self.err_grid[:, :, :, :, :, point_id], interp_points, method="linear",
+                          bounds_error=False)
+        out = int_obs
 
         return out
 
