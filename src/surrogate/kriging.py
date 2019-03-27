@@ -40,7 +40,7 @@ class KrigingModel:
             params = SWANParams(drf=point.drf, cfw=point.cfw, stpm=point.stpm)
             print(self.fake_model.output_from_model(params=params)[0])
 
-        self.points_to_train+=len(new_points)
+        self.points_to_train += len(new_points)
 
         print(f'retrain with new {len(new_points)} features')
 
@@ -58,14 +58,16 @@ class KrigingModel:
         target = np.asarray(target)
 
         start_time = datetime.now().strftime(DATE_FORMAT)
-        print(f'{start_time}: starting to train kriging model with {self.points_to_train} points for station: {self.station}')
+        print(f'{start_time}: starting to train kriging model '
+              f'with {self.points_to_train} points for station: {self.station}')
 
         krig = kriging(self.features, target, name='multikrieg')
         krig.train(optimizer='ga')
         self.krig = krig
 
         end_time = datetime.now().strftime(DATE_FORMAT)
-        print(f'{end_time}: finished to train kriging model with {self.points_to_train} points for station: {self.station}')
+        print(f'{end_time}: finished to train kriging model with'
+              f' {self.points_to_train} points for station: {self.station}')
 
     def prediction(self, params):
         assert self.krig is not None
