@@ -33,6 +33,16 @@ class KrigingModel:
 
         return np.asarray(features)
 
+    def retrain_with_new_points(self, new_points):
+        extended_features = self.features.tolist()
+        for point in new_points:
+            extended_features.append([point.drf, point.cfw, point.stpm])
+
+        print(f'retrain with new {len(new_points)} features')
+
+        self.features = np.asarray(extended_features)
+        self.train()
+
     def train(self, mode='lhs', **kwargs):
         target = []
 

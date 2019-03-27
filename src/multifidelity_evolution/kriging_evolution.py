@@ -73,7 +73,7 @@ def optimize_test(train_stations, max_gens, pop_size, archive_size, crossover_ra
     error = error_rmse_all
     train_model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=train_stations, error=error,
                                     forecasts_path='../../../2fidelity/*', forecasts_range=train_range,
-                                    is_surrogate=True, sur_points=100)
+                                    is_surrogate=True, sur_points=10)
 
     operators = default_operators()
 
