@@ -7,17 +7,15 @@ from src.basic_evolution.errors import (
     error_rmse_all
 )
 from src.basic_evolution.evo_operators import (
-    calculate_objectives_interp,
-    crossover,
-    mutation,
-    initial_pop_lhs
+    calculate_objectives_interp
 )
 from src.basic_evolution.model import (
     CSVGridFile,
     FidelityFakeModel
 )
-from src.basic_evolution.model import SWANParams
-from src.evolution.spea2 import SPEA2
+from src.basic_evolution.swan import SWANParams
+from src.evolution.operators import default_operators
+from src.evolution.spea2.default import DefaultSPEA2
 from src.utils.files import (
     wave_watch_results
 )
@@ -61,8 +59,8 @@ def default_params_forecasts(model):
 
 def optimize_test(train_stations, max_gens, pop_size, archive_size, crossover_rate, mutation_rate,
                   mutation_value_rate, plot_figures=True):
-    train_range = (0, 0.5)
-    test_range = (0.5, 1)
+    train_range = (0, 1)
+    test_range = (0, 1)
 
     grid = CSVGridFile('../../samples/wind-exp-params-new.csv')
 
@@ -74,14 +72,14 @@ def optimize_test(train_stations, max_gens, pop_size, archive_size, crossover_ra
     train_model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=train_stations, error=error,
                                     forecasts_path='../../../2fidelity/*', forecasts_range=train_range)
 
-    history, archive_history = SPEA2(
-        params=SPEA2.Params(max_gens, pop_size=pop_size, archive_size=archive_size,
-                            crossover_rate=crossover_rate, mutation_rate=mutation_rate,
-                            mutation_value_rate=mutation_value_rate),
-        init_population=initial_pop_lhs,
+    operators = default_operators()
+
+    history, archive_history = DefaultSPEA2(
+        params=DefaultSPEA2.Params(max_gens, pop_size=pop_size, archive_size=archive_size,
+                                   crossover_rate=crossover_rate, mutation_rate=mutation_rate,
+                                   mutation_value_rate=mutation_value_rate),
         objectives=partial(calculate_objectives_interp, train_model),
-        crossover=crossover,
-        mutation=mutation).solution(verbose=True)
+        evolutionary_operators=operators).solution(verbose=True)
 
     params = history.last().genotype
 
@@ -107,4 +105,3 @@ def optimize_test(train_stations, max_gens, pop_size, archive_size, crossover_ra
 if __name__ == '__main__':
     optimize_test(train_stations=[1, 2, 3], max_gens=10, pop_size=10, archive_size=5,
                   crossover_rate=0.7, mutation_rate=0.7, mutation_value_rate=[0.1, 0.01, 0.001])
-

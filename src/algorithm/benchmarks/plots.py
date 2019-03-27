@@ -9,7 +9,7 @@ from src.basic_evolution.model import (
     FidelityFakeModel,
     CSVGridFile
 )
-from src.basic_evolution.model import SWANParams
+from src.basic_evolution.swan import SWANParams
 
 
 def population_variance_boxplots(history):

@@ -5,7 +5,7 @@ import numpy as np
 from pyDOE import lhs
 from scipy.stats.distributions import norm
 
-from src.basic_evolution.model import SWANParams
+from src.basic_evolution.swan import SWANParams
 
 drf_range = [0.2, 0.4, 0.6000000000000001, 0.8, 1.0, 1.2, 1.4, 1.5999999999999999, 1.7999999999999998,
              1.9999999999999998, 2.1999999999999997, 2.4, 2.6, 2.8000000000000003]
