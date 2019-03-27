@@ -36,6 +36,8 @@ class DynamicSPEA2(SPEA2):
                 history.add_new(best_gens, gen, mean_obj(best),
                                 rmse(best))
 
+                self.handler.handle(population=self._archive, gen_idx=gen)
+
             selected = self.selected(self.params.pop_size, self._archive)
             self._pop = self.reproduce(selected, self.params.pop_size)
 
@@ -43,7 +45,6 @@ class DynamicSPEA2(SPEA2):
             self.objectives(to_add)
             archive_history.append(to_add)
 
-            self.handler.handle(population=self._pop + self._archive, gen_idx=gen)
             gen += 1
 
         return history, archive_history
