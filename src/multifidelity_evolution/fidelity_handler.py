@@ -6,7 +6,7 @@ from src.evolution.spea2.default import mean_obj
 
 class FidelityHandler:
     def __init__(self, surrogates):
-        self.point_for_retrain = 3
+        self.point_for_retrain = 10
         self.surrogates = surrogates
 
     def handle(self, population, gen_idx):
