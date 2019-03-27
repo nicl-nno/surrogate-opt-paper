@@ -22,9 +22,9 @@ from src.basic_evolution.model import (
     CSVGridFile,
     FidelityFakeModel
 )
-from src.basic_evolution.model import SWANParams
+from src.basic_evolution.swan import SWANParams
 from src.evolution.operators import default_operators
-from src.evolution.spea2 import DefaultSPEA2
+from src.evolution.spea2.default import DefaultSPEA2
 from src.utils.files import (
     wave_watch_results
 )
