@@ -24,7 +24,7 @@ from src.utils.vis import (
     plot_population_movement
 )
 
-ALL_STATIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+ALL_STATIONS = [1, 2, 3]
 
 np.random.seed(42)
 random.seed(42)
@@ -61,8 +61,8 @@ def default_params_forecasts(model):
 
 def optimize_test(train_stations, max_gens, pop_size, archive_size, crossover_rate, mutation_rate,
                   mutation_value_rate, plot_figures=True):
-    train_range = (0, 0.5)
-    test_range = (0.5, 1)
+    train_range = (0, 1)
+    test_range = (0, 1)
 
     grid = CSVGridFile('../../samples/wind-exp-params-new.csv')
 
@@ -73,7 +73,7 @@ def optimize_test(train_stations, max_gens, pop_size, archive_size, crossover_ra
     error = error_rmse_all
     train_model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=train_stations, error=error,
                                     forecasts_path='../../../2fidelity/*', forecasts_range=train_range,
-                                    is_surrogate=True)
+                                    is_surrogate=True, sur_points=100)
 
     operators = default_operators()
 
