@@ -65,7 +65,7 @@ class FidelityFakeModel(AbstractFakeModel):
         if 'sur_points' in kwargs:
             self.sur_points = kwargs['sur_points']
         else:
-            self.sur_points = 50
+            self.sur_points = 10
 
         self._init_fidelity_grids()
         self._init_grids()
@@ -78,7 +78,7 @@ class FidelityFakeModel(AbstractFakeModel):
         for station in range(len(self.stations)):
             krig = KrigingModel(grid_file=self.grid_file, fake_model=self,
                                 station_idx=station, points_to_train=self.sur_points)
-            krig.train(mode='random')
+            krig.train(mode='lhs')
             self.surrogates_by_stations.append(krig)
 
     def _init_fidelity_grids(self):
