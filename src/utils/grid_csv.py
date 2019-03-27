@@ -7,9 +7,9 @@ from src.basic_evolution.errors import (
 )
 from src.basic_evolution.model import (
     CSVGridFile,
-    FidelityFakeModel,
-    SWANParams
+    FidelityFakeModel
 )
+from src.basic_evolution.swan import SWANParams
 from src.utils.files import (
     wave_watch_results
 )
