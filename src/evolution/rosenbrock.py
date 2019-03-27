@@ -4,7 +4,7 @@ from datetime import datetime
 import numpy as np
 
 from src.evolution.operators import EvoOperators
-from src.evolution.spea2 import SPEA2
+from src.evolution.spea2 import DefaultSPEA2
 
 
 def calculate_objectives_rosenbrock(pop):
@@ -53,10 +53,10 @@ def print_best_rosenbrook(best, gen_index):
 
 def rosenbrook_optimize_test():
     operators = EvoOperators(init_population=initial_pop_rosenbrook, crossover=crossover, mutation=mutation)
-    history, _ = SPEA2(
-        params=SPEA2.Params(max_gens=500, pop_size=10, archive_size=5,
-                            crossover_rate=0.7, mutation_rate=0.7,
-                            mutation_value_rate=[0.05, 0.05]),
+    history, _ = DefaultSPEA2(
+        params=DefaultSPEA2.Params(max_gens=500, pop_size=10, archive_size=5,
+                                   crossover_rate=0.7, mutation_rate=0.7,
+                                   mutation_value_rate=[0.05, 0.05]),
         objectives=calculate_objectives_rosenbrock,
         evolutionary_operators=operators).solution(verbose=True, print_fun=print_best_rosenbrook)
 

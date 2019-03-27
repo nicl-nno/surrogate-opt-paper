@@ -24,7 +24,7 @@ from src.basic_evolution.model import (
 )
 from src.basic_evolution.model import SWANParams
 from src.evolution.operators import default_operators
-from src.evolution.spea2 import SPEA2
+from src.evolution.spea2 import DefaultSPEA2
 from src.utils.files import (
     wave_watch_results
 )
@@ -127,10 +127,10 @@ def run_genetic_opt(max_gens, pop_size, archive_size, crossover_rate, mutation_r
     test_model = model_all_stations(forecasts_range=test_range)
 
     operators = default_operators()
-    history, archive_history = SPEA2(
-        params=SPEA2.Params(max_gens=max_gens, pop_size=pop_size, archive_size=archive_size,
-                            crossover_rate=crossover_rate, mutation_rate=mutation_rate,
-                            mutation_value_rate=mutation_value_rate),
+    history, archive_history = DefaultSPEA2(
+        params=DefaultSPEA2.Params(max_gens=max_gens, pop_size=pop_size, archive_size=archive_size,
+                                   crossover_rate=crossover_rate, mutation_rate=mutation_rate,
+                                   mutation_value_rate=mutation_value_rate),
         objectives=partial(calculate_objectives_interp, train_model),
         evolutionary_operators=operators).solution(verbose=False)
 
@@ -287,10 +287,10 @@ def optimize_by_ww3_obs(train_stations, max_gens, pop_size, archive_size, crosso
 
     operators = default_operators()
 
-    history, archive_history = SPEA2(
-        params=SPEA2.Params(max_gens, pop_size=pop_size, archive_size=archive_size,
-                            crossover_rate=crossover_rate, mutation_rate=mutation_rate,
-                            mutation_value_rate=mutation_value_rate),
+    history, archive_history = DefaultSPEA2(
+        params=DefaultSPEA2.Params(max_gens, pop_size=pop_size, archive_size=archive_size,
+                                   crossover_rate=crossover_rate, mutation_rate=mutation_rate,
+                                   mutation_value_rate=mutation_value_rate),
         objectives=partial(calculate_objectives_interp, train_model),
         evolutionary_operators=operators).solution(verbose=True)
 
