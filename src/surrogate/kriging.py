@@ -57,4 +57,4 @@ class KrigingModel:
     def prediction(self, params):
         assert self.krig is not None
 
-        return self.krig.predict([params.drf, params.cfw, params.stpm])
+        return self.krig.predict(params)

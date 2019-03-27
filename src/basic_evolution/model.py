@@ -75,7 +75,7 @@ class FidelityFakeModel(AbstractFakeModel):
 
     def __init_surrogates(self):
         self.surrogates_by_stations = []
-        for station in self.stations:
+        for station in range(len(self.stations)):
             krig = KrigingModel(grid_file=self.grid_file, fake_model=self,
                                 station_idx=station, points_to_train=self.sur_points)
             krig.train(mode='random')
@@ -245,7 +245,7 @@ class FidelityFakeModel(AbstractFakeModel):
             out = np.zeros(len(self.stations))
             for station_idx in range(len(self.stations)):
                 int_obs = \
-                    self.surrogates_by_stations[station_idx].predict(
+                    self.surrogates_by_stations[station_idx].prediction(
                         [params_fixed.drf, params_fixed.cfw, params_fixed.stpm])
                 out[station_idx] = int_obs
 
