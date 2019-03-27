@@ -123,7 +123,7 @@ class FidelityFakeModel(AbstractFakeModel):
                 j = np.random.randint(0, 980)
                 X_train.append(X[j])
                 params1 = SWANParams(X[j][0], X[j][1], X[j][2])
-                k4d_train.append(self.output_kriging(params1)[0])
+                k4d_train.append(self.output_from_model(params1)[0])
             X_train = np.asarray(X_train)
             k4d_train = np.asarray(k4d_train)
 
@@ -131,9 +131,9 @@ class FidelityFakeModel(AbstractFakeModel):
             print("kriging start")
             print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
-            self.k2 = kriging(X_train, k4d_train, name='multikrieg')
-            self.k2.train(optimizer='ga')
-            self.k.append(self.k2)
+            krig = kriging(X_train, k4d_train, name='multikrieg')
+            krig.train(optimizer='ga')
+            self.k.append(krig)
             print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
             print("kriging end")
             X_train = []
@@ -270,7 +270,7 @@ class FidelityFakeModel(AbstractFakeModel):
 
         return drf, cfw, stpm, fid_time, fid_space
 
-    def output_kriging(self, params):
+    def output_from_model(self, params):
 
         points = (
             np.asarray(self.grid_file.drf_grid), np.asarray(self.grid_file.cfw_grid),
