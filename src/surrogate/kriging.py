@@ -11,14 +11,14 @@ DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 
 class KrigingModel:
-    def __init__(self, grid_file, fake_model, station_idx, points_to_train):
+    def __init__(self, grid_file, fake_model, station_idx, points_to_train, initial_fidelity):
         self.grid = grid_file
         self.model = fake_model
         self.station = station_idx
         self.fake_model = fake_model
         self.points_to_train = points_to_train
 
-        self.fidelity = (60, 14)
+        self.fidelity = initial_fidelity
 
         self.features = self.features_from_lhs()
 

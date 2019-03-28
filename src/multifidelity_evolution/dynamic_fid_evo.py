@@ -29,11 +29,11 @@ def run_evolution():
     train_model = FidelityFakeModel(grid_file=grid, observations=ww3_obs,
                                     stations_to_out=train_stations, error=error_rmse_all,
                                     forecasts_path='../../../2fidelity/*', forecasts_range=(0, 1), sur_points=5,
-                                    is_surrogate=True)
+                                    is_surrogate=True, initial_fidelity=(180, 56))
 
     operators = default_operators()
 
-    handler = FidelityHandler(surrogates=train_model.surrogates_by_stations)
+    handler = FidelityHandler(surrogates=train_model.surrogates_by_stations, time_delta=5, space_delta=5)
 
     _, _ = DynamicSPEA2(
         params=SPEA2.Params(max_gens=100, pop_size=10, archive_size=5,
