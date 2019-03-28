@@ -28,7 +28,7 @@ def run_evolution():
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=train_stations)]
     train_model = FidelityFakeModel(grid_file=grid, observations=ww3_obs,
                                     stations_to_out=train_stations, error=error_rmse_all,
-                                    forecasts_path='../../../2fidelity/*', forecasts_range=(0, 1), sur_points=50,
+                                    forecasts_path='../../../2fidelity/*', forecasts_range=(0, 1), sur_points=5,
                                     is_surrogate=True)
 
     operators = default_operators()
@@ -36,7 +36,7 @@ def run_evolution():
     handler = FidelityHandler(surrogates=train_model.surrogates_by_stations)
 
     _, _ = DynamicSPEA2(
-        params=SPEA2.Params(max_gens=100, pop_size=30, archive_size=15,
+        params=SPEA2.Params(max_gens=100, pop_size=10, archive_size=5,
                             crossover_rate=0.7, mutation_rate=0.7,
                             mutation_value_rate=[0.1, 0.01, 0.001]),
         objectives=partial(calculate_objectives_interp, train_model),

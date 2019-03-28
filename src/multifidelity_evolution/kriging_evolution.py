@@ -101,9 +101,9 @@ def optimize_test(train_stations, max_gens, pop_size, archive_size, crossover_ra
                      baseline=default_params_forecasts(test_model))
         plot_population_movement(archive_history, grid)
 
-    return  history.last().error_value
+    return history.last().error_value
 
 
 if __name__ == '__main__':
     optimize_test(train_stations=[1], max_gens=30, pop_size=30, archive_size=10,
-                  crossover_rate=0.7, mutation_rate=0.7, mutation_value_rate=[0.1, 0.01, 0.001])
+                  crossover_rate=0.7, mutation_rate=0.7, mutation_value_rate=[0.1, 0.01, 0.001], sur_points=30)

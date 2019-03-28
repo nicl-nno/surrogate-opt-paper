@@ -18,6 +18,8 @@ class DynamicSPEA2(SPEA2):
         history = SPEA2.ErrorHistory()
 
         gen = 0
+        self.handler.init_fidelity(population=self._archive + self._pop)
+
         while gen < self.params.max_gens:
             self.fitness()
             self._archive = self.environmental_selection(self._pop, self._archive)
@@ -36,7 +38,7 @@ class DynamicSPEA2(SPEA2):
                 history.add_new(best_gens, gen, mean_obj(best),
                                 rmse(best))
 
-                self.handler.handle(population=self._archive, gen_idx=gen)
+                self.handler.handle_new_min_found(population=self._archive, gen_idx=gen)
 
             selected = self.selected(self.params.pop_size, self._archive)
             self._pop = self.reproduce(selected, self.params.pop_size)
@@ -45,6 +47,7 @@ class DynamicSPEA2(SPEA2):
             self.objectives(to_add)
             archive_history.append(to_add)
 
+            self.handler.handle_new_generation(population=self._archive + self._pop, gen_idx=gen)
             gen += 1
 
         return history, archive_history

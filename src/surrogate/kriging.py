@@ -18,6 +18,8 @@ class KrigingModel:
         self.fake_model = fake_model
         self.points_to_train = points_to_train
 
+        self.fidelity = (60, 14)
+
         self.features = self.features_from_lhs()
 
         self.krig = None
@@ -37,7 +39,8 @@ class KrigingModel:
         extended_features = self.features.tolist()
         for point in new_points:
             extended_features.append([point.drf, point.cfw, point.stpm])
-            params = SWANParams(drf=point.drf, cfw=point.cfw, stpm=point.stpm)
+            params = SWANParams(drf=point.drf, cfw=point.cfw, stpm=point.stpm,
+                                fidelity_time=self.fidelity[0], fidelity_space=self.fidelity[1])
             print(self.fake_model.output_from_model(params=params)[0])
 
         self.points_to_train += len(new_points)
@@ -52,7 +55,8 @@ class KrigingModel:
 
         if mode is 'lhs':
             for feature in self.features:
-                params = SWANParams(drf=feature[0], cfw=feature[1], stpm=feature[2])
+                params = SWANParams(drf=feature[0], cfw=feature[1], stpm=feature[2],
+                                    fidelity_time=self.fidelity[0], fidelity_space=self.fidelity[1])
                 target.append(self.fake_model.output_from_model(params=params)[self.station])
 
         target = np.asarray(target)
@@ -68,6 +72,18 @@ class KrigingModel:
         end_time = datetime.now().strftime(DATE_FORMAT)
         print(f'{end_time}: finished to train kriging model with'
               f' {self.points_to_train} points for station: {self.station}')
+
+    def retrain_full(self, points, fidelity):
+        self.fidelity = fidelity
+
+        features = []
+        for point in points:
+            features.append([point.drf, point.cfw, point.stpm])
+
+        print(f'retrain full with {len(points)} points with fidelity: {self.fidelity}')
+        self.features = np.asarray(features)
+        self.points_to_train = len(features)
+        self.train()
 
     def prediction(self, params):
         assert self.krig is not None
