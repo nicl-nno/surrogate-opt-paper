@@ -20,7 +20,7 @@ from src.utils.files import (
 
 
 def run_evolution():
-    train_stations = [1, 2, 3]
+    train_stations = [1]
     grid = CSVGridFile('../../samples/wind-exp-params-new.csv')
 
     ww3_obs = \
@@ -28,14 +28,15 @@ def run_evolution():
          wave_watch_results(path_to_results='../../samples/ww-res/', stations=train_stations)]
     train_model = FidelityFakeModel(grid_file=grid, observations=ww3_obs,
                                     stations_to_out=train_stations, error=error_rmse_all,
-                                    forecasts_path='../../../2fidelity/*', forecasts_range=(0, 1))
+                                    forecasts_path='../../../2fidelity/*', forecasts_range=(0, 1), sur_points=5,
+                                    is_surrogate=True, initial_fidelity=(180, 56))
 
     operators = default_operators()
 
-    handler = FidelityHandler()
+    handler = FidelityHandler(surrogates=train_model.surrogates_by_stations, time_delta=5, space_delta=5)
 
     _, _ = DynamicSPEA2(
-        params=SPEA2.Params(max_gens=30, pop_size=10, archive_size=5,
+        params=SPEA2.Params(max_gens=100, pop_size=10, archive_size=5,
                             crossover_rate=0.7, mutation_rate=0.7,
                             mutation_value_rate=[0.1, 0.01, 0.001]),
         objectives=partial(calculate_objectives_interp, train_model),

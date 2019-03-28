@@ -60,7 +60,7 @@ def default_params_forecasts(model):
 
 
 def optimize_test(train_stations, max_gens, pop_size, archive_size, crossover_rate, mutation_rate,
-                  mutation_value_rate, plot_figures=True):
+                  mutation_value_rate, sur_points, plot_figures=True):
     train_range = (0, 1)
     test_range = (0, 1)
 
@@ -73,7 +73,7 @@ def optimize_test(train_stations, max_gens, pop_size, archive_size, crossover_ra
     error = error_rmse_all
     train_model = FidelityFakeModel(grid_file=grid, observations=ww3_obs, stations_to_out=train_stations, error=error,
                                     forecasts_path='../../../2fidelity/*', forecasts_range=train_range,
-                                    is_surrogate=True, sur_points=100)
+                                    is_surrogate=True, sur_points=sur_points)
 
     operators = default_operators()
 
@@ -101,9 +101,9 @@ def optimize_test(train_stations, max_gens, pop_size, archive_size, crossover_ra
                      baseline=default_params_forecasts(test_model))
         plot_population_movement(archive_history, grid)
 
-    return history
+    return history.last().error_value
 
 
 if __name__ == '__main__':
-    optimize_test(train_stations=[1, 2, 3], max_gens=30, pop_size=30, archive_size=10,
-                  crossover_rate=0.7, mutation_rate=0.7, mutation_value_rate=[0.1, 0.01, 0.001])
+    optimize_test(train_stations=[1], max_gens=30, pop_size=30, archive_size=10,
+                  crossover_rate=0.7, mutation_rate=0.7, mutation_value_rate=[0.1, 0.01, 0.001], sur_points=30)

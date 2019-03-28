@@ -59,6 +59,7 @@ class FidelityFakeModel(AbstractFakeModel):
 
         if 'is_surrogate' in kwargs:
             self.is_surrogate = kwargs['is_surrogate']
+            self.initial_fidelity = kwargs['initial_fidelity']
         else:
             self.is_surrogate = False
 
@@ -77,7 +78,8 @@ class FidelityFakeModel(AbstractFakeModel):
         self.surrogates_by_stations = []
         for station in range(len(self.stations)):
             krig = KrigingModel(grid_file=self.grid_file, fake_model=self,
-                                station_idx=station, points_to_train=self.sur_points)
+                                station_idx=station, points_to_train=self.sur_points,
+                                initial_fidelity=self.initial_fidelity)
             krig.train(mode='lhs')
             self.surrogates_by_stations.append(krig)
 
@@ -224,7 +226,8 @@ class FidelityFakeModel(AbstractFakeModel):
         params_fixed = self._fixed_params(params)
 
         interp_mesh = np.array(
-            np.meshgrid(params_fixed.drf, params_fixed.cfw, params_fixed.stpm, params_fixed.fid_time, params.fid_space))
+            np.meshgrid(params_fixed.drf, params_fixed.cfw, params_fixed.stpm,
+                        params_fixed.fid_time, params_fixed.fid_space))
         interp_points = abs(np.rollaxis(interp_mesh, 0, 6).reshape((1, 5)))
 
         out = np.zeros(len(self.stations))
