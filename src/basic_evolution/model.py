@@ -59,9 +59,13 @@ class FidelityFakeModel(AbstractFakeModel):
 
         if 'is_surrogate' in kwargs:
             self.is_surrogate = kwargs['is_surrogate']
-            self.initial_fidelity = kwargs['initial_fidelity']
         else:
             self.is_surrogate = False
+
+        if 'initial_fidelity' in kwargs:
+            self.initial_fidelity = kwargs['initial_fidelity']
+        else:
+            self.initial_fidelity = (14,60)
 
         if 'sur_points' in kwargs:
             self.sur_points = kwargs['sur_points']
@@ -335,3 +339,9 @@ class CSVGridRow:
 def unique_values(values):
     cnt = Counter(values)
     return list(cnt.keys())
+
+class SWANPerfModel:
+    def get_execution_time(fidelity):
+        t0=11*60
+        execution_time = t0 * 60/fidelity[0] * 14/fidelity[1]
+        return (execution_time)
