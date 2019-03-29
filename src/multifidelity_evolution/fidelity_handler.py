@@ -8,13 +8,13 @@ from src.evolution.spea2.default import mean_obj
 
 
 class FidelityHandler:
-    def __init__(self, surrogates, time_delta, space_delta):
+    def __init__(self, surrogates, time_delta, space_delta, point_for_retrain, gens_to_change_fidelity):
         self.surrogates = surrogates
         self.time_delta = time_delta
         self.space_delta = space_delta
-        self.point_for_retrain = 3
+        self.point_for_retrain = point_for_retrain
         self.last_min_at_gen = -1
-        self.gens_to_change_fidelity = 5
+        self.gens_to_change_fidelity = gens_to_change_fidelity
 
     def init_fidelity(self, population):
         print(f'initial fid: {self.surrogates[0].fidelity}')
