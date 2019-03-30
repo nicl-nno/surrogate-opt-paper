@@ -29,19 +29,17 @@ import csv
 score_history = []
 best_score_history = []
 
-deadline = 20 * 60 * 60
-
 # SWANPerfModel.get_execution_time((14,60))
 run_id = 0
 
 
 def run_evolution(sur_points, time_delta, space_delta, point_for_retrain, gens_to_change_fidelity,max_gens,pop_size,archive_size):
-    train_stations = [1, 2, 3]
+    train_stations = [1]
 
     initial_fidelity = (180, 56)
     #sur_points = 5
 
-    dyn_params = SPEA2.Params(max_gens=100, pop_size=10, archive_size=5,
+    dyn_params = SPEA2.Params(max_gens=max_gens, pop_size=pop_size, archive_size=archive_size,
                               crossover_rate=0.7, mutation_rate=0.7,
                               mutation_value_rate=[0.1, 0.01, 0.001])
 
@@ -78,7 +76,7 @@ def run_evolution(sur_points, time_delta, space_delta, point_for_retrain, gens_t
 
     fieldnames = ['ID', 'deadline', 'sur_points', 'gens_to_change_fidelity', 'max_gens', 'pop_size', 'error']
 
-    with open(os.path.join("C:\\Users\\Nikolay\\metaopt1", "res1.csv"), 'a', newline='') as csvfile:
+    with open(os.path.join("C:\\metaopt1", "res1.csv"), 'a', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         row_to_write = {'ID': 0,
@@ -117,7 +115,7 @@ def objective(args):
                               mutation_value_rate=[0.1, 0.01, 0.001])
 
     ex_time = DynamicSPEA2PerfModel.get_execution_time(sur_points, initial_fidelity, dyn_params, handler)
-    if (ex_time >= deadline):
+    if (ex_time >= deadline or ex_time < deadline*0.7):
         print(ex_time)
         return 99999
 
@@ -141,14 +139,14 @@ def objective(args):
 
     # run_id+=1
 
-    writer = csv.DictWriter(os.path.join("C:\\Users\\Nikolay\\metaopt1", "res1.csv"), 'a', newline='',
+    writer = csv.DictWriter(os.path.join("C:\\metaopt1", "res1.csv"), 'a', newline='',
                             fieldnames=fieldnames)
     writer.writeheader()
 
 
-sur_points = (10, 200)
+sur_points = (10, 300)
 gens_to_change_fidelity = (3, 9)
-max_gens = (10, 30)
+max_gens = (10, 50)
 pop_size = (20, 100)
 
 deadline = 20 * 60 * 60
