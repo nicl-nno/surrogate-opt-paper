@@ -100,7 +100,7 @@ def run_evolution(sur_points, time_delta, space_delta, point_for_retrain, gens_t
     fieldnames = ['ID', 'IterId', 'SetId', 'drf', 'cfw', 'stpm',
                   'rmse_all', 'rmse_peak', 'mae_all', 'mae_peak', 'deadline']
 
-    with open(os.path.join("C:\\metaopt2", "res2.csv"), 'a', newline='') as csvfile:
+    with open(os.path.join("C:\\metaopt2", "res-dd.csv"), 'a', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         row_to_write = {'ID': run_id, 'IterId': iter_id, 'SetId': 0,
@@ -188,7 +188,7 @@ fieldnames = ['ID', 'IterId', 'SetId', 'drf', 'cfw', 'stpm',
               'rmse_all', 'rmse_peak', 'mae_all', 'mae_peak', 'deadline']
 # run_id+=1
 
-with open(os.path.join("C:\\metaopt2", "res2.csv"), 'w', newline='') as csvfile:
+with open(os.path.join("C:\\metaopt2", "res2-dd.csv"), 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
 
@@ -238,8 +238,8 @@ for iterId in range(100):
 
             ex_time = DynamicSPEA2PerfModel.get_execution_time(initial_surrogate_points, initial_fidelity, dyn_params, handler)
 
-            #evo_res=run_evolution(initial_surrogate_points, time_delta, space_delta, point_for_retrain, gens_to_change_fidelity, max_gens, pop_size,
-            #            archive_size,iterId,deadline)
+            evo_res=run_evolution(initial_surrogate_points, time_delta, space_delta, point_for_retrain, gens_to_change_fidelity, max_gens, pop_size,
+                        archive_size,iterId,deadline)
 
 
 
