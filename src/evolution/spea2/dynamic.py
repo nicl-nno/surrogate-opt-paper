@@ -63,7 +63,7 @@ class DynamicSPEA2PerfModel:
     def get_execution_time(sur_points, initial_fidelity, params, handler):
 
         def sur_execution_time(num_points):
-            return (0.001 * num_points ** 2)
+            return (0.0001 * num_points ** 2.5)
 
         num_gens = params.max_gens
         pop_size = params.pop_size
@@ -81,7 +81,7 @@ class DynamicSPEA2PerfModel:
 
         execution_time_add_runs = 0
         execution_time_retrain_runs = (SWANPerfModel.get_execution_time(
-            initial_fidelity)) * num_points_for_retrain * gens_frame * min_found_prob
+            initial_fidelity)) * num_points_for_retrain * gens_to_change_fidelity * min_found_prob
 
         current_fidelity = initial_fidelity
 
@@ -89,9 +89,9 @@ class DynamicSPEA2PerfModel:
             if (current_fidelity[0] - time_delta > 0 and current_fidelity[1] - space_delta > 0):
                 current_fidelity = (current_fidelity[0] - time_delta, current_fidelity[1] - space_delta)
                 execution_time_retrain_runs += (SWANPerfModel.get_execution_time(
-                    current_fidelity)) * pop_size + sur_execution_time(pop_size)
+                    current_fidelity)) * pop_size/3 + sur_execution_time(pop_size/3)
             execution_time_add_runs += SWANPerfModel.get_execution_time(
-                current_fidelity) * num_points_for_retrain+sur_execution_time(num_points_for_retrain) * gens_frame * min_found_prob
+                current_fidelity) * num_points_for_retrain+sur_execution_time(num_points_for_retrain) * gens_to_change_fidelity * min_found_prob
 
         execution_time = execution_time_init + execution_time_add_runs + execution_time_retrain_runs
 

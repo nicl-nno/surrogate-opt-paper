@@ -65,7 +65,7 @@ class FidelityFakeModel(AbstractFakeModel):
         if 'initial_fidelity' in kwargs:
             self.initial_fidelity = kwargs['initial_fidelity']
         else:
-            self.initial_fidelity = (14,60)
+            self.initial_fidelity = (14, 60)
 
         if 'sur_points' in kwargs:
             self.sur_points = kwargs['sur_points']
@@ -77,6 +77,7 @@ class FidelityFakeModel(AbstractFakeModel):
 
         if self.is_surrogate:
             self.__init_surrogates()
+            self.ready_sur_points = []
 
     def __init_surrogates(self):
         self.surrogates_by_stations = []
@@ -86,6 +87,10 @@ class FidelityFakeModel(AbstractFakeModel):
                                 initial_fidelity=self.initial_fidelity)
             krig.train(mode='lhs')
             self.surrogates_by_stations.append(krig)
+
+
+
+            #self.ready_sur_points.append([feature.extend(self.initial_fidelity) for feature in krig.features])
 
     def _init_fidelity_grids(self):
         fid_time, fid_space = presented_fidelity(forecast_files_from_dir(self.forecasts_path))
@@ -340,8 +345,9 @@ def unique_values(values):
     cnt = Counter(values)
     return list(cnt.keys())
 
+
 class SWANPerfModel:
     def get_execution_time(fidelity):
-        t0=11*60
-        execution_time = t0 * 60/fidelity[0] * 14/fidelity[1]
+        t0 = 11 * 60
+        execution_time = t0 * 60 / fidelity[0] * 14 / fidelity[1]
         return (execution_time)
