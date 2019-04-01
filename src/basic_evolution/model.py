@@ -90,7 +90,7 @@ class FidelityFakeModel(AbstractFakeModel):
 
 
 
-            self.ready_sur_points.append([feature.extend(self.initial_fidelity) for feature in krig.features])
+            #self.ready_sur_points.append([feature.extend(self.initial_fidelity) for feature in krig.features])
 
     def _init_fidelity_grids(self):
         fid_time, fid_space = presented_fidelity(forecast_files_from_dir(self.forecasts_path))

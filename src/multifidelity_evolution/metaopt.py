@@ -110,11 +110,12 @@ def objective(args):
 
     initial_fidelity = (180, 56)
 
-    dyn_params = SPEA2.Params(max_gens=100, pop_size=10, archive_size=5,
+    dyn_params = SPEA2.Params(max_gens=max_gens, pop_size=pop_size, archive_size=archive_size,
                               crossover_rate=0.7, mutation_rate=0.7,
                               mutation_value_rate=[0.1, 0.01, 0.001])
 
     ex_time = DynamicSPEA2PerfModel.get_execution_time(sur_points, initial_fidelity, dyn_params, handler)
+
     if (ex_time >= deadline or ex_time < deadline*0.7):
         print(ex_time)
         return 99999

@@ -122,7 +122,7 @@ def save_archive_history(history, file_name='history.csv'):
                 writer.writerow(row_to_write)
 
 
-def run_genetic_opt(max_gens, pop_size, archive_size, crossover_rate, mutation_rate, mutation_value_rate, sur_points,gens_to_change_fidelity,
+def run_genetic_opt(max_gens, pop_size, archive_size, crossover_rate, mutation_rate, mutation_value_rate, sur_points,
                     stations,
                     **kwargs):
     grid = CSVGridFile('../../samples/wind-exp-params-new.csv')
@@ -139,15 +139,18 @@ def run_genetic_opt(max_gens, pop_size, archive_size, crossover_rate, mutation_r
     operators = default_operators()
 
     handler = FidelityHandler(surrogates=train_model.surrogates_by_stations, time_delta=30, space_delta=14,
-                              point_for_retrain=int(round(archive_size/2)), gens_to_change_fidelity=gens_to_change_fidelity)
+                              point_for_retrain=3, gens_to_change_fidelity=10)
 
     history, archive_history = DynamicSPEA2(
-        params=SPEA2.Params(max_gens=max_gens, pop_size=pop_size, archive_size=archive_size,
+        params=SPEA2.Params(max_gens=max_gens, pop_size=30, archive_size=10,
                             crossover_rate=crossover_rate, mutation_rate=mutation_rate,
                             mutation_value_rate=mutation_value_rate),
         objectives=partial(calculate_objectives_interp, train_model),
         evolutionary_operators=operators,
         fidelity_handler=handler).solution(verbose=False)
+
+    exptime2 = str(datetime.datetime.now().time()).replace(":", "-")
+    # save_archive_history(archive_history, f'rob-exp-bl-{exptime2}.csv')
 
     params = history.last().genotype
 
@@ -220,7 +223,6 @@ def opt_run(packed_args):
                            mutation_rate=param_for_run['mutation_rate'],
                            mutation_value_rate=mutation_value_rate,
                            sur_points=param_for_run['sur_points'],
-                           gens_to_change_fidelity=param_for_run['gens_to_change_fidelity'],
                            stations=stations_for_run,
                            save_figures=False)
 
@@ -274,20 +276,15 @@ def multiple_runs():
     path_to_results = f'../../multiple_runs_{exptime}'
     os.mkdir(path_to_results)
     ind = 0
-    #for sur_points in range(50, 950, 100):
-    # sur_points=5
+    for sur_points in range(50, 950, 100):
+        # sur_points=5
+        print(sur_points)
+        objective_manual = {'a': 0, 'archive_size_rate': 0.25, 'crossover_rate': 0.7,
+                            'max_gens': 30, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
+                            'mutation_p3': 0.001, 'mutation_rate': 0.7, 'pop_size': 30, 'sur_points': sur_points}
 
-    sur_points=175
-    gens_to_change_fidelity=5
-    max_gens=17
-    pop_size=88
-
-    objective_manual = {'a': 0, 'archive_size_rate': 0.5, 'crossover_rate': 0.7,
-                        'max_gens': max_gens, 'mutation_p1': 0.1, 'mutation_p2': 0.01,
-                        'mutation_p3': 0.001, 'mutation_rate': 0.7, 'pop_size': pop_size, 'sur_points': sur_points,'gens_to_change_fidelity':gens_to_change_fidelity}
-
-    experiment_run(objective_manual, ind, "C:\\Users\\Nikolay\\add-sur-dyn-opt")
-    ind = ind + 1
+        experiment_run(objective_manual, ind, "C:\\Users\\Nikolay\\add-sur-dyn2")
+        ind = ind + 1
 
 
 if __name__ == '__main__':
