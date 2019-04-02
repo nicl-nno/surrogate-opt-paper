@@ -19,7 +19,7 @@ class DynamicSPEA2(SPEA2):
         if 'points_by_fidelity' in kwargs:
             self.points_by_fidelity = kwargs['points_by_fidelity']
         else:
-            self.points_by_fidelity = None
+            self.points_by_fidelity = {}
 
     def solution(self, verbose=True, **kwargs):
         archive_history = []
@@ -55,7 +55,8 @@ class DynamicSPEA2(SPEA2):
             self.objectives(to_add)
             archive_history.append(to_add)
 
-            self.handler.handle_new_generation(population=self._archive + self._pop, gen_idx=gen)
+            self.handler.handle_new_generation(population=self._archive + self._pop, gen_idx=gen,
+                                               points_by_fidelity=self.points_by_fidelity)
             gen += 1
 
         return history, archive_history

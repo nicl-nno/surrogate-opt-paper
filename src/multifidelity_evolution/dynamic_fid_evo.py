@@ -13,7 +13,10 @@ from src.basic_evolution.model import (
 from src.evolution.operators import default_operators
 from src.evolution.spea2.dynamic import DynamicSPEA2, DynamicSPEA2PerfModel
 from src.evolution.spea2.spea2 import SPEA2
-from src.multifidelity_evolution.fidelity_handler import FidelityHandler
+from src.multifidelity_evolution.fidelity_handler import (
+    FidelityHandler,
+    default_points_by_fidelity
+)
 from src.utils.files import (
     wave_watch_results
 )
@@ -52,7 +55,8 @@ def run_evolution():
         params=dyn_params,
         objectives=partial(calculate_objectives_interp, train_model),
         evolutionary_operators=operators,
-        fidelity_handler=handler).solution(verbose=True)
+        fidelity_handler=handler,
+        points_by_fidelity=default_points_by_fidelity(size=5)).solution(verbose=True)
 
 
 if __name__ == '__main__':

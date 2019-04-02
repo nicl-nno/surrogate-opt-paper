@@ -20,12 +20,13 @@ class FidelityHandler:
         self.gens_to_change_fidelity = gens_to_change_fidelity
 
     def init(self, population):
-        print(f'initial fid: {self.surrogates[0].fidelity}')
+        initial_fidelity = self.surrogates[0].fidelity
+        print(f'initial fid: {initial_fidelity}')
         self.set_fidelity(population=population, new_fidelity=self.surrogates[0].fidelity)
-        self.train_surrogates()
+        self.train_surrogates(fidelity=initial_fidelity)
 
-    def train_surrogates(self, **kwargs):
-        fidelity = self.surrogates[0].fidelity
+    def train_surrogates(self, fidelity, **kwargs):
+        # fidelity = self.surrogates[0].fidelity
         if 'points_to_train' in kwargs:
             for model in self.surrogates:
                 model.train_with_mixed_points(fidelity=fidelity, external_points=kwargs['points_to_train'])
@@ -61,7 +62,7 @@ class FidelityHandler:
                     external_points = self.external_points(new_fidelity, kwargs['points_by_fidelity'])
                     print(f'external points: {len(external_points)}')
                     points_for_train = self.__extracted_points(population) + external_points
-                    self.train_surrogates(points_to_train=points_for_train)
+                    self.train_surrogates(points_to_train=points_for_train, fidelity=new_fidelity)
 
     def external_points(self, fidelity, points_by_fidelity):
         points = []
