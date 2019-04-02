@@ -141,7 +141,7 @@ def run_genetic_opt(max_gens, pop_size, archive_size, crossover_rate, mutation_r
     handler = FidelityHandler(surrogates=train_model.surrogates_by_stations, time_delta=30, space_delta=14,
                               point_for_retrain=3, gens_to_change_fidelity=10)
 
-    history, archive_history = DynamicSPEA2(
+    history, archive_history, _ = DynamicSPEA2(
         params=SPEA2.Params(max_gens=max_gens, pop_size=30, archive_size=10,
                             crossover_rate=crossover_rate, mutation_rate=mutation_rate,
                             mutation_value_rate=mutation_value_rate),
