@@ -16,9 +16,19 @@ class FidelityHandler:
         self.last_min_at_gen = -1
         self.gens_to_change_fidelity = gens_to_change_fidelity
 
-    def init_fidelity(self, population):
+    def init(self, population):
         print(f'initial fid: {self.surrogates[0].fidelity}')
         self.set_fidelity(population=population, new_fidelity=self.surrogates[0].fidelity)
+        self.train_surrogates()
+
+    def train_surrogates(self, **kwargs):
+        fidelity = self.surrogates[0].fidelity
+        if 'points_to_train' in kwargs:
+            for model in self.surrogates:
+                model.train_with_mixed_points(fidelity=fidelity, external_points=kwargs['points_to_train'])
+        else:
+            for model in self.surrogates:
+                model.train_with_mixed_points(fidelity=fidelity)
 
     def handle_new_min_found(self, population, gen_idx):
         self.last_min_at_gen = gen_idx
@@ -30,7 +40,7 @@ class FidelityHandler:
         for model in self.surrogates:
             model.retrain_with_new_points(new_points=new_points)
 
-    def handle_new_generation(self, population, gen_idx):
+    def handle_new_generation(self, population, gen_idx, **kwargs):
         if self.last_min_at_gen != -1 and self.__gens_after_last_min(gen_idx) >= self.gens_to_change_fidelity:
             current_fid_time = population[0].genotype.fid_time
             current_fid_space = population[0].genotype.fid_space

@@ -85,12 +85,10 @@ class FidelityFakeModel(AbstractFakeModel):
             krig = KrigingModel(grid_file=self.grid_file, fake_model=self,
                                 station_idx=station, points_to_train=self.sur_points,
                                 initial_fidelity=self.initial_fidelity)
-            krig.train(mode='lhs')
+            # krig.mix_with_additional_points(points=[])
+            # TODO: train should be somewhere else
+            # krig.train(mode='lhs')
             self.surrogates_by_stations.append(krig)
-
-
-
-            #self.ready_sur_points.append([feature.extend(self.initial_fidelity) for feature in krig.features])
 
     def _init_fidelity_grids(self):
         fid_time, fid_space = presented_fidelity(forecast_files_from_dir(self.forecasts_path))

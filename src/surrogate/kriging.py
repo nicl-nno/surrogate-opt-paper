@@ -20,7 +20,8 @@ class KrigingModel:
 
         self.fidelity = initial_fidelity
 
-        self.features = self.features_from_lhs()
+        # self.features = self.features_from_lhs()
+        self.features = None
 
         self.krig = None
 
@@ -34,6 +35,31 @@ class KrigingModel:
         features = [[drf, cfw, stpm] for drf, cfw, stpm in samples_grid]
 
         return np.asarray(features)
+
+    def train_with_mixed_points(self, fidelity, external_points=[]):
+        self.fidelity = fidelity
+        features_from_lhs = self.features_from_lhs().tolist()
+
+        # Take all points as new features for train
+        features_total = []
+        for point in external_points:
+            features_total.append([point.drf, point.cfw, point.stpm])
+
+        # Extend features with points from lhs
+        lhs_features_idx = 0
+        while len(features_total) < self.points_to_train:
+            drf, cfw, stpm = features_from_lhs[lhs_features_idx]
+            features_total.append([drf, cfw, stpm])
+            lhs_features_idx += 1
+
+        self.points_to_train = len(features_total)
+        self.features = np.asarray(features_total)
+
+        print(
+            f'train with mixed points: external points: {len(external_points)}, from lhs: {lhs_features_idx};'
+            f' with fidelity: {self.fidelity}')
+
+        self.train()
 
     def retrain_with_new_points(self, new_points):
         extended_features = self.features.tolist()
