@@ -4,6 +4,9 @@ fidelity_space = [14, 28, 56]
 MIN_FID_TIME = 60
 MIN_FID_SPACE = 14
 
+from itertools import product
+
+from src.basic_evolution.swan import SWANParams
 from src.evolution.spea2.default import mean_obj
 
 
@@ -53,7 +56,19 @@ class FidelityHandler:
                 self.last_min_at_gen = gen_idx
                 print(f'fidelity has been changed at {gen_idx} generation:'
                       f' {(current_fid_time, current_fid_space)} -> {new_fidelity}')
-                self.retrain_models_with_new_fidelity(points=population, fidelity=new_fidelity)
+
+                if 'points_by_fidelity' in kwargs:
+                    external_points = self.external_points(new_fidelity, kwargs['points_by_fidelity'])
+                    print(f'external points: {len(external_points)}')
+                    points_for_train = self.__extracted_points(population) + external_points
+                    self.train_surrogates(points_to_train=points_for_train)
+
+    def external_points(self, fidelity, points_by_fidelity):
+        points = []
+        if fidelity in points_by_fidelity:
+            points = points_by_fidelity[fidelity]
+
+        return points
 
     def set_fidelity(self, population, new_fidelity):
         fid_time, fid_space = new_fidelity
@@ -83,3 +98,31 @@ class FidelityHandler:
         new_fid_space = max(MIN_FID_SPACE, current_fid_space - self.space_delta)
 
         return new_fid_time, new_fid_space
+
+    def __extracted_points(self, population):
+        return [individ.genotype for individ in population]
+
+
+def default_points_by_fidelity(size=10):
+    points_by_fidelity = {}
+
+    for fidelity in fidelity_combinations():
+        points = []
+        for _ in range(size):
+            params = SWANParams.new_instance()
+            params.fid_time = fidelity[0]
+            params.fid_space = fidelity[1]
+
+            points.append(params)
+
+        points_by_fidelity[fidelity] = points
+
+    return points_by_fidelity
+
+
+def fidelity_combinations():
+    fidelity = []
+    for fid_time, fid_space in product(fidelity_time, fidelity_space):
+        fidelity.append((fid_time, fid_space))
+
+    return fidelity
