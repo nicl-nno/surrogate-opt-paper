@@ -51,7 +51,7 @@ def run_evolution():
 
     print(ex_time)
 
-    _, _ = DynamicSPEA2(
+    _, _, points_by_fid = DynamicSPEA2(
         params=dyn_params,
         objectives=partial(calculate_objectives_interp, train_model),
         evolutionary_operators=operators,

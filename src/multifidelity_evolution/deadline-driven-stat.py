@@ -90,7 +90,7 @@ def run_evolution(sur_points, time_delta, space_delta, point_for_retrain, gens_t
                               crossover_rate=0.7, mutation_rate=0.7,
                               mutation_value_rate=[0.1, 0.01, 0.001])
 
-    history, _ = DynamicSPEA2(
+    history, _, _ = DynamicSPEA2(
         params=dyn_params,
         objectives=partial(calculate_objectives_interp, train_model),
         evolutionary_operators=operators,

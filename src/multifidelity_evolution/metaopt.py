@@ -68,7 +68,7 @@ def run_evolution(sur_points, time_delta, space_delta, point_for_retrain, gens_t
 
     # print(ex_time)
 
-    history, _ = DynamicSPEA2(
+    history, _, _ = DynamicSPEA2(
         params=dyn_params,
         objectives=partial(calculate_objectives_interp, train_model),
         evolutionary_operators=operators,

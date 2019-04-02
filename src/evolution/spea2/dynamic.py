@@ -59,7 +59,7 @@ class DynamicSPEA2(SPEA2):
                                                points_by_fidelity=self.points_by_fidelity)
             gen += 1
 
-        return history, archive_history
+        return history, archive_history, self.points_by_fidelity
 
 
 class DynamicSPEA2PerfModel:
