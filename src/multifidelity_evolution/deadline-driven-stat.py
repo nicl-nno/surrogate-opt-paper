@@ -189,17 +189,13 @@ def objective(args):
 iter_id = 0
 fieldnames = ['ID', 'IterId', 'SetId', 'drf', 'cfw', 'stpm',
               'rmse_all', 'rmse_peak', 'mae_all', 'mae_peak', 'deadline']
-# run_id+=1
+
 
 with open(os.path.join("C:\\metaopt2", "res2-nondd.csv"), 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
 
-# min_deadline=100
-# for deadline_modifier in range (min_deadline,500,50):
-#    deadline_ratio=deadline_modifier/min_deadline
 
-#    deadline = 6*deadline_ratio * 60 * 60
 for iterId in range(100):
     min_deadline = 100
     for deadline_modifier in range(min_deadline, 1000, 100):
@@ -245,10 +241,7 @@ for iterId in range(100):
             wasted_time = ex_time
 
             initial_surrogate_points += 50
-            # pop_size = round(pop_size * 0.75)
-            # max_gens = round(max_gens * 0.75)
 
-            #  print(initial_surrogate_points)
 
             if wasted_time >= deadline:
                 evo_res = run_evolution(initial_surrogate_points - 50, time_delta, space_delta, point_for_retrain,

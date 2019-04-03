@@ -58,6 +58,8 @@ def run_evolution():
         fidelity_handler=handler,
         points_by_fidelity=default_points_by_fidelity(size=5)).solution(verbose=True)
 
+    points_by_fid
+
 
 if __name__ == '__main__':
     run_evolution()

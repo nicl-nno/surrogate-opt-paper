@@ -29,11 +29,9 @@ from src.utils.files import (
 import os
 import csv
 
-
 score_history = []
 best_score_history = []
 
-# SWANPerfModel.get_execution_time((14,60))
 run_id = 0
 
 ALL_STATIONS = [1, 2, 3]
@@ -59,12 +57,13 @@ def init_models_to_tests():
 
     return models
 
+
 models_to_tests = init_models_to_tests()
 
 
 def run_evolution(sur_points, time_delta, space_delta, point_for_retrain, gens_to_change_fidelity, max_gens, pop_size,
-                  archive_size,iter_id,deadline):
-    train_stations = [1,2,3]
+                  archive_size, iter_id, deadline, points_by_fid):
+    train_stations = [1, 2, 3]
 
     initial_fidelity = (180, 56)
 
@@ -82,20 +81,22 @@ def run_evolution(sur_points, time_delta, space_delta, point_for_retrain, gens_t
 
     operators = default_operators()
 
-    handler = FidelityHandler(surrogates=train_model.surrogates_by_stations, time_delta=time_delta, space_delta=space_delta,
+    handler = FidelityHandler(surrogates=train_model.surrogates_by_stations, time_delta=time_delta,
+                              space_delta=space_delta,
                               point_for_retrain=point_for_retrain, gens_to_change_fidelity=gens_to_change_fidelity)
 
     dyn_params = SPEA2.Params(max_gens=max_gens, pop_size=pop_size, archive_size=archive_size,
                               crossover_rate=0.7, mutation_rate=0.7,
                               mutation_value_rate=[0.1, 0.01, 0.001])
 
-    history, _, _ = DynamicSPEA2(
+    history, _, points_by_fid_new = DynamicSPEA2(
         params=dyn_params,
         objectives=partial(calculate_objectives_interp, train_model),
         evolutionary_operators=operators,
-        fidelity_handler=handler).solution(verbose=True)
+        fidelity_handler=handler,
+        points_by_fidelity=points_by_fid).solution(verbose=True)
 
-    best=history.last()
+    best = history.last()
 
     fieldnames = ['ID', 'IterId', 'SetId', 'drf', 'cfw', 'stpm',
                   'rmse_all', 'rmse_peak', 'mae_all', 'mae_peak', 'deadline']
@@ -119,7 +120,8 @@ def run_evolution(sur_points, time_delta, space_delta, point_for_retrain, gens_t
 
         writer.writerow(row_to_write)
 
-    return history.last().error_value
+    return history.last().error_value, points_by_fid_new
+
 
 def all_error_metrics(params, models_to_tests):
     metrics = {'rmse_all': error_rmse_all,
@@ -137,66 +139,17 @@ def all_error_metrics(params, models_to_tests):
     return out
 
 
-def objective(args):
-    sur_points, gens_to_change_fidelity, max_gens, pop_size = args
-
-    sur_points = int(round(sur_points))
-
-    time_delta = 30
-    space_delta = 14
-    pop_size = int(round(pop_size))
-    archive_size = round(pop_size / 2)
-    point_for_retrain = round(archive_size / 2)
-    # int(round(point_for_retrain))
-    gens_to_change_fidelity = int(round(gens_to_change_fidelity))
-
-    handler = FidelityHandler(surrogates=[], time_delta=15, space_delta=7,
-                              point_for_retrain=3, gens_to_change_fidelity=10)
-
-    initial_fidelity = (180, 56)
-
-    dyn_params = SPEA2.Params(max_gens=100, pop_size=10, archive_size=5,
-                              crossover_rate=0.7, mutation_rate=0.7,
-                              mutation_value_rate=[0.1, 0.01, 0.001])
-
-    ex_time = DynamicSPEA2PerfModel.get_execution_time(sur_points, initial_fidelity, dyn_params, handler)
-    if (ex_time >= deadline or ex_time < deadline * 0.7):
-        print(ex_time)
-        return 99999
-
-    print("OBJ", sur_points, point_for_retrain, gens_to_change_fidelity)
-
-    score = run_evolution(sur_points, time_delta, space_delta, point_for_retrain, gens_to_change_fidelity, max_gens,
-                          pop_size, archive_size)
-
-    if (len(best_score_history) == 0 or score < best_score_history[len(best_score_history) - 1][
-        0]):
-        best_score = score
-        best_score_history.append([best_score, ])
-    score_history.append([score, ])
-
-    print("SCORE FOUND")
-    print(score)
-    return score
-
-    # optimize
-
 ############################################
 
-iter_id=0
+iter_id = 0
 fieldnames = ['ID', 'IterId', 'SetId', 'drf', 'cfw', 'stpm',
               'rmse_all', 'rmse_peak', 'mae_all', 'mae_peak', 'deadline']
-# run_id+=1
 
 with open(os.path.join("C:\\metaopt2", "res2-dd.csv"), 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
 
-#min_deadline=100
-#for deadline_modifier in range (min_deadline,500,50):
-#    deadline_ratio=deadline_modifier/min_deadline
 
-#    deadline = 6*deadline_ratio * 60 * 60
 for iterId in range(100):
     min_deadline = 100
     for deadline_modifier in range(min_deadline, 1000, 100):
@@ -204,56 +157,53 @@ for iterId in range(100):
 
         deadline = deadline_ratio * 60 * 60
 
-
         wasted_time = 0
 
         pre_calculated = 0
 
-        initial_surrogate_points = round(10 + (20 * deadline_ratio-1))
+        initial_surrogate_points = round(10 + (20 * deadline_ratio - 1))
 
         saved_for_next = 0
 
-        run_cons_id=0
+        run_cons_id = 0
+
+        points_prev=[]
         while True:
             print(f'iter {iterId}')
             print(f'dd {deadline}')
             print(f'runid {run_cons_id}')
             initial_fidelity = (180, 56)
-            pop_size = 10 + 5 * (deadline_ratio-1)
-            max_gens = 10 + 5 * (deadline_ratio-1)
+            pop_size = 10 + 5 * (deadline_ratio - 1)
+            max_gens = 10 + 5 * (deadline_ratio - 1)
 
             time_delta = 30
             space_delta = 14
             pop_size = int(round(pop_size))
             archive_size = round(pop_size / 2)
             point_for_retrain = round(archive_size / 4)
-            gens_to_change_fidelity=round(max_gens/2)
+            gens_to_change_fidelity = round(max_gens / 2)
 
             handler = FidelityHandler(surrogates=[], time_delta=time_delta, space_delta=space_delta,
-                                      point_for_retrain=point_for_retrain, gens_to_change_fidelity=gens_to_change_fidelity)
+                                      point_for_retrain=point_for_retrain,
+                                      gens_to_change_fidelity=gens_to_change_fidelity)
 
             dyn_params = SPEA2.Params(max_gens=max_gens, pop_size=pop_size, archive_size=archive_size,
                                       crossover_rate=0.7, mutation_rate=0.7,
                                       mutation_value_rate=[0.1, 0.01, 0.001])
 
-            ex_time = DynamicSPEA2PerfModel.get_execution_time(initial_surrogate_points, initial_fidelity, dyn_params, handler)
+            ex_time = DynamicSPEA2PerfModel.get_execution_time(initial_surrogate_points, initial_fidelity, dyn_params,
+                                                               handler)
 
-            evo_res=run_evolution(initial_surrogate_points, time_delta, space_delta, point_for_retrain, gens_to_change_fidelity, max_gens, pop_size,
-                        archive_size,iterId,deadline)
+            evo_res, points = run_evolution(initial_surrogate_points, time_delta, space_delta, point_for_retrain,
+                                            gens_to_change_fidelity, max_gens, pop_size,
+                                            archive_size, iterId, deadline,points_prev)
 
+            points_prev = points
 
-
-            wasted_time = wasted_time + ex_time - saved_for_next
-
-            saved_for_next = ex_time * 0.9
+            wasted_time = wasted_time + ex_time - ex_time * 0.9
 
             initial_surrogate_points += 50
-            #pop_size = round(pop_size * 0.75)
-            #max_gens = round(max_gens * 0.75)
-
-
-          #  print(initial_surrogate_points)
 
             if wasted_time >= deadline:
                 break
-            run_cons_id=run_cons_id+1
+            run_cons_id = run_cons_id + 1
